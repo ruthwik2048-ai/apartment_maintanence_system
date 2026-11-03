@@ -1,0 +1,115 @@
+{% extends "complaints/base.html" %}
+{% block title %}Staff Work Portal | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .staff-portal { padding-bottom: 2rem; }
+    .staff-portal-hero {
+        padding: clamp(1.5rem, 5vw, 2.5rem);
+        border-radius: 1.2rem;
+        color: #fff;
+        background: linear-gradient(120deg, #4338ca, #7c3aed 55%, #db2777);
+        box-shadow: 0 1rem 2.5rem #6d28d92b;
+    }
+    .staff-portal-hero p { margin: 0 0 .4rem; color: #fce7f3; font-weight: 700; letter-spacing: .05em; }
+    .staff-portal-hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .staff-portal-hero span { display: block; margin-top: .5rem; color: #f5f3ff; }
+    .staff-portal-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .85rem; margin: 1.2rem 0; }
+    .staff-portal-stat { padding: 1rem 1.2rem; border: 1px solid #e6e8f2; border-radius: .9rem; background: #fff; box-shadow: 0 .45rem 1.3rem #312e8110; }
+    .staff-portal-stat strong { display: block; color: #312e81; font-size: 1.7rem; }
+    .staff-portal-stat span { color: #566477; }
+    .staff-portal-stat:nth-child(1) { border-top: 4px solid #6366f1; }
+    .staff-portal-stat:nth-child(2) { border-top: 4px solid #f59e0b; }
+    .staff-portal-stat:nth-child(3) { border-top: 4px solid #0ea5e9; }
+    .staff-portal-stat:nth-child(4) { border-top: 4px solid #10b981; }
+    .staff-portal-heading { margin: 1.7rem 0 .75rem; color: #312e81; }
+    .staff-portal-table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: .9rem; background: #fff; box-shadow: 0 .45rem 1.3rem #312e810c; }
+    .staff-portal-table-wrap table { min-width: 780px; margin: 0; }
+    .staff-portal-table-wrap th { background: #eef2ff; color: #3730a3; }
+    .staff-portal-table-wrap tr:hover td { background: #fafaff; }
+    .staff-portal-empty { padding: 1.5rem; border: 1px dashed #c4b5fd; border-radius: .9rem; background: #f5f3ff; color: #5b4b8a; }
+    .staff-status { display: inline-block; padding: .2rem .55rem; border-radius: 999px; background: #eef2ff; color: #3730a3; font-weight: 700; }
+    .staff-emergencies { margin: 1.2rem 0; padding: 1rem 1.2rem; border: 1px solid #fecaca; border-left: 5px solid #dc2626; border-radius: .85rem; background: #fef2f2; }
+    .staff-emergencies h2 { margin-top: 0; color: #991b1b; }
+    .staff-emergencies li { margin: .55rem 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="staff-portal">
+    <section class="staff-portal-hero">
+        <p>MAINTENANCE STAFF WORK PORTAL</p>
+        <h1>Welcome, {{ user.get_full_name|default:user.username }}</h1>
+        <span>Monitor assigned complaints and update work progress. Completed items leave this active list after 24 hours; their history is retained.</span>
+        {% if user.can_manage_maintenance_collection %}
+            <p><a class="button" href="{% url 'maintenance_collection' %}">Check monthly maintenance collection</a></p>
+        {% endif %}
+    </section>
+
+    <section class="staff-portal-stats" aria-label="Assigned complaint summary">
+        <div class="staff-portal-stat"><strong>{{ summary.total }}</strong><span>Assigned to you</span></div>
+        <div class="staff-portal-stat"><strong>{{ summary.assigned }}</strong><span>Pending</span></div>
+        <div class="staff-portal-stat"><strong>{{ summary.in_progress }}</strong><span>In progress</span></div>
+        <div class="staff-portal-stat"><strong>{{ summary.completed }}</strong><span>Completed</span></div>
+        <div class="staff-portal-stat"><strong>{{ summary.successful }}</strong><span>Successful</span></div>
+    </section>
+
+    {% if emergency_notifications or emergency_complaints %}
+        <section class="staff-emergencies" aria-label="Emergency reports">
+            <h2>Emergency reports</h2>
+            {% if emergency_notifications %}
+                <ul>
+                    {% for notification in emergency_notifications %}
+                        <li><strong>{{ notification.created_at|date:"M j, H:i" }}</strong> · {{ notification.message }} <a href="{% url 'complaint_detail' notification.complaint_id %}">Open</a></li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+            {% if emergency_complaints %}
+                <h3>Open emergency work</h3>
+                <ul>
+                    {% for complaint in emergency_complaints %}
+                        <li>
+                            <a href="{% url 'complaint_detail' complaint.pk %}">{{ complaint.title }}</a>
+                            · {{ complaint.resident.get_full_name|default:complaint.resident.username }}
+                            · {% if complaint.scope == "common" %}Common area: {{ complaint.common_area_location }}{% else %}{{ complaint.unit }}{% endif %}
+                            · {% if complaint.assigned_to %}Claimed by {{ complaint.assigned_to }}{% else %}Waiting for staff{% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </section>
+    {% endif %}
+
+    <h2 class="staff-portal-heading">Your assigned complaints</h2>
+    {% if complaints %}
+        <div class="staff-portal-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Issue</th>
+                        <th>Area</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Work status</th>
+                        <th>Reported</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for complaint in complaints %}
+                        <tr>
+                            <td>{{ complaint.title }}</td>
+                            <td>{% if complaint.scope == "common" %}Common area · {{ complaint.common_area_location }}{% else %}{{ complaint.unit }}{% endif %}</td>
+                            <td>{{ complaint.category }}</td>
+                            <td>{{ complaint.get_priority_display }}</td>
+                            <td><span class="staff-status">{{ complaint.get_status_display }}</span>{% if complaint.is_overdue %} · Overdue{% endif %}</td>
+                            <td>{{ complaint.created_at|date:"M j, Y" }}</td>
+                            <td><a href="{% url 'complaint_detail' complaint.pk %}">{% if complaint.status == "assigned" or complaint.status == "pending" or complaint.status == "reopened" or complaint.status == "in_progress" %}Update work{% else %}View details{% endif %}</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="staff-portal-empty">No complaints have been assigned to you yet. New assignments from the president will appear here.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,141 @@
+{% extends "complaints/base.html" %}
+{% block title %}Vijetha Community Access{% endblock %}
+{% block extra_styles %}
+<style>
+    .community-admin { padding-bottom: 2rem; }
+    .community-admin-hero {
+        padding: clamp(1.5rem, 5vw, 2.5rem);
+        border-radius: 1.2rem;
+        color: #fff;
+        background: linear-gradient(120deg, #4338ca, #7c3aed 55%, #db2777);
+        box-shadow: 0 1rem 2.5rem #6d28d92b;
+    }
+    .community-admin-hero p { margin: 0 0 .4rem; color: #fce7f3; font-weight: 700; letter-spacing: .05em; }
+    .community-admin-hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .community-admin-hero span { display: block; margin-top: .5rem; color: #f5f3ff; }
+    .community-admin-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .85rem; margin: 1.2rem 0; }
+    .community-admin-stat { padding: 1rem 1.2rem; border: 1px solid #e6e8f2; border-radius: .9rem; background: #fff; box-shadow: 0 .45rem 1.3rem #312e8110; }
+    .community-admin-stat strong { display: block; color: #312e81; font-size: 1.7rem; }
+    .community-admin-stat span { color: #566477; }
+    .community-admin-stat:nth-child(1) { border-top: 4px solid #6366f1; }
+    .community-admin-stat:nth-child(2) { border-top: 4px solid #f59e0b; }
+    .community-admin-stat:nth-child(3) { border-top: 4px solid #0ea5e9; }
+    .community-admin-stat:nth-child(4) { border-top: 4px solid #10b981; }
+    .community-admin-heading { margin: 1.7rem 0 .75rem; color: #312e81; }
+    .community-admin-table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: .9rem; background: #fff; box-shadow: 0 .45rem 1.3rem #312e810c; }
+    .community-admin-table-wrap table { min-width: 850px; margin: 0; }
+    .community-admin-table-wrap th { background: #eef2ff; color: #3730a3; }
+    .community-admin-table-wrap tr:hover td { background: #fafaff; }
+    .community-admin-salary-table { min-width: 500px !important; }
+    .community-admin-empty { padding: 1.5rem; border: 1px dashed #c4b5fd; border-radius: .9rem; background: #f5f3ff; color: #5b4b8a; }
+    .community-directory { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: .75rem; }
+    .community-directory-item { display: block; padding: 1rem; border: 1px solid #e4e7f2; border-left: 4px solid #8b5cf6; border-radius: .75rem; background: linear-gradient(110deg, #fff, #f5f3ff); color: inherit; text-decoration: none; }
+    .community-directory-item:hover, .community-directory-item:focus-visible { border-color: #8b5cf6; background: linear-gradient(110deg, #f5f3ff, #ede9fe); }
+    .community-directory-item:focus-visible { outline: 3px solid #c4b5fd; outline-offset: 2px; }
+    .community-directory-item strong { display: block; color: #4338ca; font-size: 1.15rem; }
+    .community-directory-item span { color: #536575; }
+    .community-admin-actions { margin: 1.1rem 0; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="community-admin">
+    <section class="community-admin-hero">
+        <p>APARTMENT PRESIDENT PORTAL</p>
+        <h1>Vijetha Community Access</h1>
+        <span>Review resident maintenance complaints and open a request to assign staff or view its work history.</span>
+    </section>
+    <p class="community-admin-actions">
+        <a class="button" href="{% url 'community_staff' %}">Manage maintenance staff</a>
+    </p>
+
+    <section class="community-admin-stats" aria-label="Complaint overview">
+        <div class="community-admin-stat"><strong>{{ summary.total }}</strong><span>Total complaints</span></div>
+        <div class="community-admin-stat"><strong>{{ summary.pending }}</strong><span>Pending</span></div>
+        <div class="community-admin-stat"><strong>{{ summary.in_progress }}</strong><span>In progress</span></div>
+        <div class="community-admin-stat"><strong>{{ summary.resolved }}</strong><span>Resolved</span></div>
+    </section>
+
+    <h2 class="community-admin-heading">Monthly staff salaries</h2>
+    <p>Watchmen receive ₹10,000 per month; all other maintenance staff receive ₹7,500 per month.</p>
+    {% if staff_members %}
+        <div class="community-admin-table-wrap">
+            <table class="community-admin-salary-table">
+                <thead>
+                    <tr>
+                        <th>Staff member</th>
+                        <th>Position</th>
+                        <th>Monthly salary</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for staff_member in staff_members %}
+                        <tr>
+                            <td>{{ staff_member.get_full_name|default:staff_member.username }}</td>
+                            <td>{{ staff_member.get_staff_position_display|default:"Maintenance staff" }}</td>
+                            <td>₹{{ staff_member.salary|floatformat:2 }}</td>
+                        </tr>
+                    {% endfor %}
+                    <tr>
+                        <th colspan="2">Total monthly staff salaries</th>
+                        <th>₹{{ monthly_salary_total|floatformat:2 }}</th>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="community-admin-empty">No active maintenance staff to display.</p>
+    {% endif %}
+
+    <h2 class="community-admin-heading">Flat owners</h2>
+    {% if units %}
+        <section class="community-directory" aria-label="Flat number and owner directory">
+            {% for unit in units %}
+                <a class="community-directory-item" href="{% url 'community_unit_detail' unit.pk %}" aria-label="Open complaints for flat {{ unit.unit_number }}">
+                    <strong>Flat {{ unit.unit_number }}</strong>
+                    <span>{{ unit.owner_name }} · {{ unit.apartment.name }}</span>
+                </a>
+            {% endfor %}
+        </section>
+    {% else %}
+        <p class="community-admin-empty">No flats have been added to the community yet.</p>
+    {% endif %}
+
+    <h2 class="community-admin-heading">Resident complaints</h2>
+    {% if complaints %}
+        <div class="community-admin-table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Issue</th>
+                        <th>Area</th>
+                        <th>Resident</th>
+                        <th>Category</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Assigned staff</th>
+                        <th>Reported</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for complaint in complaints %}
+                        <tr>
+                            <td>{{ complaint.title }}</td>
+                            <td>{% if complaint.scope == "common" %}Common area · {{ complaint.common_area_location }}{% else %}{{ complaint.unit }}{% endif %}</td>
+                            <td>{{ complaint.resident.get_full_name|default:complaint.resident.username }}</td>
+                            <td>{{ complaint.category }}</td>
+                            <td>{{ complaint.get_priority_display }}</td>
+                            <td>{{ complaint.get_status_display }}{% if complaint.is_overdue %} (overdue){% endif %}</td>
+                            <td>{{ complaint.assigned_to|default:"Not assigned" }}</td>
+                            <td>{{ complaint.created_at|date:"M j, Y" }}</td>
+                            <td><a href="{% url 'complaint_detail' complaint.pk %}">Manage</a></td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="community-admin-empty">No complaints have been submitted yet. Resident reports will appear here for review.</p>
+    {% endif %}
+</div>
+{% endblock %}

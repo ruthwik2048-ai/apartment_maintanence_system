@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Vijetha Nivas{% endblock %}</title>
+    <style>
+        body {
+            font: 16px/1.5 system-ui, sans-serif;
+            margin: 0;
+            color: #17212b;
+            background:
+                radial-gradient(ellipse at 8% 12%, #fbcfe866, transparent 34rem),
+                radial-gradient(ellipse at 92% 38%, #c4b5fd66, transparent 38rem),
+                radial-gradient(ellipse at 48% 100%, #bae6fd66, transparent 42rem),
+                linear-gradient(135deg, #fff7ed, #fdf2f8 48%, #eef2ff);
+            background-attachment: fixed;
+        }
+        header {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: .55rem;
+            padding: .8rem max(1rem, calc((100% - 960px) / 2));
+            background: linear-gradient(105deg, #4338ca 0%, #7c3aed 52%, #db2777 100%);
+            color: white;
+            box-shadow: 0 .35rem 1.2rem #6d28d933;
+        }
+        header a { padding: .45rem .7rem; border-radius: .55rem; color: white; text-decoration: none; }
+        header a:hover { background: #ffffff24; }
+        header > a:first-child {
+            display: inline-flex;
+            align-items: center;
+            gap: .55rem;
+            margin-right: auto;
+            padding: .2rem .8rem .2rem 0;
+            font-size: clamp(1.55rem, 3.5vw, 2rem);
+            font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif;
+            font-weight: 700;
+            letter-spacing: .075em;
+            text-transform: uppercase;
+            text-shadow: 0 2px 8px #2e106555;
+        }
+        .brand-apartment-logo { width: 2.45rem; height: 2.45rem; flex: 0 0 auto; filter: drop-shadow(0 3px 5px #2e106555); }
+        .brand-name { display: flex; flex-direction: column; line-height: 1.05; }
+        .brand-tagline { margin-top: .22rem; font: 600 .58rem/1.1 system-ui, sans-serif; letter-spacing: .2em; text-shadow: none; }
+        header form { margin: 0; }
+        header button {
+            padding: .55rem .9rem;
+            border: 1px solid #fde68a;
+            border-radius: .55rem;
+            background: #fde68a;
+            color: #422006;
+            font-weight: 700;
+        }
+        main { max-width: 960px; margin: 2rem auto; padding: 0 1rem; }
+        .card, table { background: white; border-radius: .5rem; padding: 1rem; margin: 1rem 0; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: .75rem; }
+        .cards .card { margin: 0; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: .65rem; border-bottom: 1px solid #dce3e8; text-align: left; }
+        label { display: block; font-weight: 600; margin-top: .75rem; }
+        input, select, textarea { max-width: 100%; padding: .5rem; }
+        button, .button { display: inline-block; padding: .55rem .9rem; border: 0; border-radius: .3rem; background: #176b87; color: white; text-decoration: none; cursor: pointer; }
+        .password-input-wrap { position: relative; display: flex; width: 100%; max-width: 100%; }
+        .password-input-wrap input { width: 100%; box-sizing: border-box; padding-right: 2.8rem; }
+        .password-visibility-toggle {
+            position: absolute;
+            top: 50%;
+            right: .3rem;
+            display: grid;
+            width: 2rem;
+            height: 2rem;
+            margin: 0;
+            padding: .3rem;
+            place-items: center;
+            transform: translateY(-50%);
+            border: 0;
+            background: transparent;
+            color: #536575;
+            cursor: pointer;
+        }
+        .password-visibility-toggle:hover { background: #eef2ff; color: #4338ca; }
+        .password-visibility-toggle:focus-visible { outline: 2px solid #7c3aed; outline-offset: 1px; }
+        .password-visibility-toggle svg { width: 1.2rem; height: 1.2rem; }
+        .messages { padding: .75rem; background: #e7f5eb; }
+        .errorlist { color: #a32020; }
+        .muted { color: #5b6872; }
+        @media (max-width: 600px) {
+            header { gap: .25rem; }
+            header > a:first-child { width: 100%; margin-right: 0; font-size: 1.8rem; }
+            header a { padding: .4rem .55rem; }
+        }
+    </style>
+    {% block extra_styles %}{% endblock %}
+</head>
+<body>
+<header>
+    <a href="{% url 'community_information' %}">
+        <svg class="brand-apartment-logo" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <defs>
+                <linearGradient id="brand-building" x1="13" y1="8" x2="37" y2="39" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#7C3AED"/>
+                    <stop offset="1" stop-color="#DB2777"/>
+                </linearGradient>
+                <linearGradient id="brand-building-back" x1="7" y1="8" x2="40" y2="42" gradientUnits="userSpaceOnUse">
+                    <stop stop-color="#FFF7ED"/>
+                    <stop offset="1" stop-color="#FCE7F3"/>
+                </linearGradient>
+            </defs>
+            <rect x="2" y="2" width="44" height="44" rx="14" fill="url(#brand-building-back)"/>
+            <path d="M8 40h32" stroke="#4338CA" stroke-width="2" stroke-linecap="round"/>
+            <path d="M9 40V24l9-5v21H9Z" fill="#6366F1"/>
+            <path d="M17 40V14l11-7 11 7v26H17Z" fill="url(#brand-building)" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M23 17h3v3h-3zm7 0h3v3h-3zm-7 7h3v3h-3zm7 0h3v3h-3zm-7 7h3v3h-3zm7 0h3v3h-3z" fill="#FDE68A"/>
+            <path d="M25 40v-5h4v5" stroke="white" stroke-width="1.5" stroke-linejoin="round"/>
+            <path d="M7 18V14" stroke="#DB2777" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="7" cy="11" r="2" fill="#F59E0B"/>
+        </svg>
+        <strong class="brand-name">Vijetha Nivas<span class="brand-tagline">GATED COMMUNITY</span></strong>
+    </a>
+    {% if user.is_authenticated %}
+        <a href="{% url 'dashboard' %}">Dashboard</a>
+        {% if user.role == "resident" %}
+            <a href="{% url 'complaint_create' %}">Report an issue</a>
+            <a href="{% url 'resident_help' %}">Resident help</a>
+        {% endif %}
+        {% if user.role == "admin" or user.is_superuser %}
+            <a href="{% url 'community_access' %}">Vijetha Community Access</a>
+        {% elif user.role == "staff" %}
+            <a href="{% url 'staff_portal' %}">Staff work portal</a>
+            {% if user.can_manage_maintenance_collection %}
+                <a href="{% url 'maintenance_collection' %}">Maintenance collection</a>
+            {% endif %}
+        {% elif user.is_staff %}
+            <a href="{% url 'admin:index' %}">Admin</a>
+        {% endif %}
+        <form action="{% url 'logout' %}" method="post" style="display:inline">
+            {% csrf_token %}
+            <button type="submit">Log out</button>
+        </form>
+    {% else %}
+        {% if request.resolver_match.url_name != "community_information" %}
+            <a href="{% url 'login' %}">Log in</a>
+        {% endif %}
+        <a href="{% url 'staff_login' %}">Staff login</a>
+        <a href="{% url 'community_access_login' %}">President access</a>
+    {% endif %}
+</header>
+<main>
+    {% if messages %}
+        <div class="messages">
+            {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+        </div>
+    {% endif %}
+    {% block content %}{% endblock %}
+</main>
+<script>
+    document.querySelectorAll('input[type="password"]').forEach((input) => {
+        const wrapper = document.createElement("span");
+        wrapper.className = "password-input-wrap";
+        input.parentNode.insertBefore(wrapper, input);
+        wrapper.appendChild(input);
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "password-visibility-toggle";
+        button.setAttribute("aria-label", "Show password");
+        button.setAttribute("aria-pressed", "false");
+        button.title = "Show password";
+
+        const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        icon.setAttribute("viewBox", "0 0 24 24");
+        icon.setAttribute("fill", "none");
+        icon.setAttribute("stroke", "currentColor");
+        icon.setAttribute("stroke-width", "2");
+        icon.setAttribute("stroke-linecap", "round");
+        icon.setAttribute("stroke-linejoin", "round");
+        icon.setAttribute("aria-hidden", "true");
+
+        const eye = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        eye.setAttribute("d", "M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z");
+        icon.appendChild(eye);
+
+        const pupil = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        pupil.setAttribute("cx", "12");
+        pupil.setAttribute("cy", "12");
+        pupil.setAttribute("r", "3");
+        icon.appendChild(pupil);
+
+        const slash = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        slash.setAttribute("d", "m3 3 18 18");
+        icon.appendChild(slash);
+        button.appendChild(icon);
+        wrapper.appendChild(button);
+
+        button.addEventListener("click", () => {
+            const showPassword = input.type === "password";
+            input.type = showPassword ? "text" : "password";
+            button.setAttribute("aria-label", showPassword ? "Hide password" : "Show password");
+            button.setAttribute("aria-pressed", String(showPassword));
+            button.title = showPassword ? "Hide password" : "Show password";
+            slash.setAttribute("display", showPassword ? "none" : "inline");
+        });
+    });
+</script>
+</body>
+</html>

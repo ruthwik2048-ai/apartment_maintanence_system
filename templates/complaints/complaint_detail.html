@@ -1,0 +1,79 @@
+{% extends "complaints/base.html" %}
+{% block title %}{{ complaint.title }} | Vijetha Nivas{% endblock %}
+{% block content %}
+<p><a href="{% url 'dashboard' %}">Back to dashboard</a></p>
+<section class="card">
+    <h1>{{ complaint.title }}</h1>
+    {% if complaint.is_emergency %}<p><strong>EMERGENCY REPORT</strong></p>{% endif %}
+    <p><strong>Status:</strong> {{ complaint.get_status_display }}{% if complaint.is_overdue %} (overdue){% endif %}</p>
+    <p><strong>Priority:</strong> {{ complaint.get_priority_display }}</p>
+    <p><strong>Issue area:</strong> {{ complaint.get_scope_display }}{% if complaint.scope == "common" %} · {{ complaint.common_area_location }}{% endif %}</p>
+    <p><strong>Category:</strong> {{ complaint.category }}</p>
+    {% if complaint.unit %}<p><strong>Unit:</strong> {{ complaint.unit }}</p>{% endif %}
+    <p><strong>Preferred visit time:</strong> {{ complaint.preferred_visit_time|default:"Not specified" }}</p>
+    <p><strong>Resident:</strong> {{ complaint.resident.get_full_name|default:complaint.resident.username }}</p>
+    <p><strong>Assigned to:</strong> {{ complaint.assigned_to|default:"Not assigned" }}</p>
+    <p>{{ complaint.description|linebreaksbr }}</p>
+    {% if complaint.image %}
+        <p><a href="{{ complaint.image.url }}">View uploaded attachment</a></p>
+    {% endif %}
+    {% if complaint.feedback %}
+        <p><strong>Feedback:</strong> {{ complaint.feedback.rating }}/5 - {{ complaint.feedback.comments }}</p>
+    {% endif %}
+</section>
+
+{% if can_manage %}
+<section class="card">
+    <h2>{% if complaint.assigned_to %}Reassign maintenance staff{% else %}Assign maintenance staff{% endif %}</h2>
+    {% if complaint.assigned_to %}
+        <p>Currently assigned to <strong>{{ complaint.assigned_to.get_full_name|default:complaint.assigned_to.username }}</strong>. Choose another active staff member below to reassign this complaint.</p>
+    {% else %}
+        <p>Choose an active staff member to handle this complaint.</p>
+    {% endif %}
+    <form method="post" action="{% url 'assign_complaint' complaint.pk %}">
+        {% csrf_token %}
+        {{ assignment_form.as_p }}
+        <button type="submit">{% if complaint.assigned_to %}Reassign complaint{% else %}Assign complaint{% endif %}</button>
+    </form>
+</section>
+{% endif %}
+
+{% if can_update %}
+<section class="card">
+    <h2>Update work status</h2>
+    <form method="post" enctype="multipart/form-data" action="{% url 'update_complaint' complaint.pk %}">
+        {% csrf_token %}
+        {{ update_form.as_p }}
+        <button type="submit">Save update</button>
+    </form>
+</section>
+{% endif %}
+
+{% if feedback_form %}
+<section class="card">
+    <h2>{% if complaint.is_emergency %}Rate the emergency response{% else %}Rate the completed work{% endif %}</h2>
+    <p>{% if complaint.is_emergency %}How quickly and effectively was this emergency handled?{% else %}Select a rating from 1 to 5, then optionally add a comment.{% endif %}</p>
+    <form method="post" action="{% url 'submit_feedback' complaint.pk %}">
+        {% csrf_token %}
+        {{ feedback_form.as_p }}
+        <button type="submit">Submit feedback</button>
+    </form>
+</section>
+{% endif %}
+
+{% if can_reopen %}
+<form method="post" action="{% url 'reopen_complaint' complaint.pk %}">
+    {% csrf_token %}
+    <button type="submit">Reopen complaint</button>
+</form>
+{% endif %}
+
+<section class="card">
+    <h2>Work history</h2>
+    {% for log in complaint.work_logs.all %}
+        <p><strong>{{ log.get_status_display }}</strong> by {{ log.performed_by }} on {{ log.created_at|date:"M j, Y H:i" }}<br>{{ log.comment }}</p>
+    {% empty %}
+        <p>No work updates have been recorded.</p>
+    {% endfor %}
+</section>
+{% endblock %}

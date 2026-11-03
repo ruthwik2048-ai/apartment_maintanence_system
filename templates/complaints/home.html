@@ -1,0 +1,239 @@
+{% extends "complaints/base.html" %}
+{% block title %}Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .home-page {
+        padding: 1rem;
+        border-radius: 1.5rem;
+        background:
+            radial-gradient(ellipse at 4% 5%, #7c3aed4a, transparent 34%),
+            radial-gradient(ellipse at 96% 95%, #db277735, transparent 34%),
+            linear-gradient(145deg, #0b1020, #111827 58%, #17152b);
+        color: #e5e7eb;
+        box-shadow: inset 0 1px #ffffff12, 0 1.5rem 4rem #0b10204d;
+    }
+    .home-hero {
+        position: relative;
+        display: grid;
+        grid-template-columns: minmax(0, 1.15fr) minmax(250px, .85fr);
+        align-items: center;
+        gap: clamp(1rem, 3vw, 2rem);
+        overflow: hidden;
+        padding: clamp(2rem, 7vw, 4.5rem);
+        border-radius: 1.5rem;
+        color: #fff;
+        background:
+            radial-gradient(ellipse at 78% 12%, #f9a8d44d, transparent 34%),
+            linear-gradient(120deg, #312e81 0%, #5b21b6 48%, #be185d 100%);
+        box-shadow: 0 1.25rem 3rem #6d28d940;
+    }
+    .home-hero::before {
+        position: absolute;
+        top: -7rem;
+        right: 25%;
+        width: 16rem;
+        height: 16rem;
+        border: 1px solid #ffffff24;
+        border-radius: 50%;
+        content: "";
+        pointer-events: none;
+    }
+    .home-hero-copy { position: relative; z-index: 1; }
+    .home-eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: .5rem;
+        margin: 0 0 1rem;
+        padding: .35rem .75rem;
+        border: 1px solid #ffffff66;
+        border-radius: 999px;
+        background: #ffffff1c;
+        color: #fce7f3;
+        font-size: .78rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+    .home-eyebrow::before { width: .45rem; height: .45rem; border-radius: 50%; background: #fde68a; box-shadow: 0 0 .7rem #fde68a; content: ""; }
+    .home-hero h1 { max-width: 620px; margin: 0; font-size: clamp(2.4rem, 5vw, 4.2rem); line-height: 1.03; letter-spacing: -.045em; }
+    .home-hero-copy > p:not(.home-eyebrow) { max-width: 540px; margin: 1.2rem 0 1.75rem; color: #f3e8ff; font-size: 1.08rem; }
+    .home-actions { display: flex; flex-wrap: wrap; gap: .75rem; }
+    .home-actions .button { padding: .85rem 1.2rem; border: 1px solid #ffffff85; border-radius: .7rem; font-weight: 700; transition: transform .18s ease, box-shadow .18s ease; }
+    .home-actions .button:hover { transform: translateY(-2px); box-shadow: 0 .5rem 1rem #1e1b4b40; }
+    .home-actions .button-primary { border-color: #fde68a; background: linear-gradient(110deg, #fde68a, #fbbf24); color: #422006; }
+    .home-actions .button-secondary { background: #ffffff17; backdrop-filter: blur(8px); }
+    .home-hero-sale { display: inline-flex; align-items: center; gap: .55rem; margin: 0 0 1.25rem; padding: .65rem .9rem; border: 1px solid #fde68a99; border-radius: .7rem; background: #ffffff18; color: #fff; font-size: .92rem; }
+    .home-hero-sale a { color: #fde68a; font-weight: 800; text-underline-offset: .2em; }
+    .home-location { display: inline-flex; align-items: center; gap: .45rem; margin-top: 1.2rem; color: #e9d5ff; font-size: .9rem; }
+    .home-location svg { width: 1rem; height: 1rem; color: #fda4af; }
+    .home-visual { position: relative; z-index: 1; display: grid; min-height: 290px; place-items: center; }
+    .home-building-art { width: min(100%, 350px); overflow: visible; filter: drop-shadow(0 1.1rem 1.4rem #1e1b4b55); }
+    .home-visual-badge { position: absolute; display: flex; align-items: center; gap: .55rem; padding: .65rem .85rem; border: 1px solid #ffffff8c; border-radius: .85rem; background: #ffffffed; color: #312e81; box-shadow: 0 .65rem 1.6rem #1e1b4b35; }
+    .home-visual-badge strong { display: block; font-size: 1rem; line-height: 1.1; }
+    .home-visual-badge span { display: block; color: #647084; font-size: .72rem; }
+    .home-visual-badge-icon { display: grid; width: 2.2rem; height: 2.2rem; place-items: center; border-radius: .65rem; background: linear-gradient(135deg, #ede9fe, #fce7f3); font-size: 1.15rem; }
+    .home-visual-badge-top { top: 12%; right: 0; }
+    .home-visual-badge-bottom { bottom: 10%; left: 0; }
+    .home-features { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 1rem; margin-top: 1.25rem; }
+    .home-feature { position: relative; display: block; min-height: 145px; padding: 1.35rem 3rem 1.35rem 1.35rem; border: 1px solid #e4e7f2; border-radius: 1rem; background: #fff; box-shadow: 0 .5rem 1.5rem #4338ca12; color: inherit; text-decoration: none; transition: transform .18s ease, box-shadow .18s ease; }
+    .home-feature::after { position: absolute; right: 1.25rem; bottom: 1.25rem; display: grid; width: 2rem; height: 2rem; place-items: center; border-radius: 50%; background: #eef2ff; color: #4f46e5; content: "→"; font-size: 1.15rem; transition: transform .18s ease; }
+    .home-feature:hover { transform: translateY(-5px); box-shadow: 0 1rem 2rem #4338ca24; }
+    .home-feature:hover::after { transform: translateX(3px); }
+    .home-feature:focus-visible { outline: 3px solid #4f46e5; outline-offset: 3px; }
+    .home-feature:nth-child(1) { background: linear-gradient(145deg, #fff 30%, #fff7ed); border-bottom: 4px solid #f97316; }
+    .home-feature:nth-child(2) { background: linear-gradient(145deg, #fff 30%, #ecfdf5); border-bottom: 4px solid #10b981; }
+    .home-feature:nth-child(3) { background: linear-gradient(145deg, #fff 30%, #f5f3ff); border-bottom: 4px solid #8b5cf6; }
+    .home-feature-icon { display: grid; width: 3.1rem; height: 3.1rem; margin-bottom: .9rem; place-items: center; border-radius: 1rem; background: linear-gradient(135deg, #fff, #f5f3ff); font-size: 1.65rem; box-shadow: 0 .3rem .85rem #26334d18; }
+    .home-feature h2 { margin: 0 0 .4rem; color: #312e81; font-size: 1.1rem; }
+    .home-feature p { margin: 0; color: #536575; }
+    .home-steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: 1.25rem; padding: 1rem; border: 1px solid #ddd6fe; border-radius: 1rem; background: linear-gradient(100deg, #ffffffc9, #f5f3ffdc, #fdf2f8dc); }
+    .home-step { display: flex; align-items: center; gap: .7rem; padding: .45rem .7rem; }
+    .home-step .home-step-number { display: grid; width: 2.4rem; height: 2.4rem; flex: 0 0 auto; place-items: center; border: 2px solid #c4b5fd; border-radius: .75rem; background: linear-gradient(145deg, #312e81, #581c87); color: #fff !important; font-size: 1.15rem; font-weight: 900; box-shadow: 0 .3rem .8rem #312e8166; }
+    .home-step strong { display: block; color: #312e81; font-size: .9rem; }
+    .home-step span { color: #647084; font-size: .78rem; }
+    .community-section {
+        position: relative;
+        overflow: hidden;
+        margin-top: 1.25rem;
+        padding: clamp(1.35rem, 4vw, 2rem);
+        border: 1px solid #ffffff24;
+        border-radius: 1rem;
+        background:
+            radial-gradient(ellipse at 100% 0, #a855f740, transparent 42%),
+            radial-gradient(ellipse at 0 100%, #2563eb2e, transparent 42%),
+            linear-gradient(125deg, #1c2540, #171827 65%, #25172c);
+        box-shadow: 0 .75rem 2rem #03071270, inset 0 1px #ffffff0d;
+    }
+    .community-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .community-eyebrow { display: inline-flex; align-items: center; gap: .4rem; margin-bottom: .65rem; color: #c4b5fd; font-size: .75rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+    .community-section h2 { margin: 0 0 .5rem; color: #fff; font-size: clamp(1.6rem, 4vw, 2.25rem); letter-spacing: -.035em; }
+    .community-section h2 span { color: #fcd34d; }
+    .community-section > .community-heading p { max-width: 650px; margin: 0; color: #cbd5e1; }
+    .community-emblem { display: grid; width: 4.5rem; height: 4.5rem; flex: 0 0 auto; place-items: center; border: 1px solid #ffffff30; border-radius: 1.35rem; background: linear-gradient(145deg, #ffffff20, #ffffff08); box-shadow: 0 .7rem 1.5rem #03071245; font-size: 2.2rem; transform: rotate(4deg); }
+    .community-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: .75rem; margin-top: 1.35rem; }
+    .community-fact { display: grid; grid-template-columns: 2.5rem 1fr; column-gap: .7rem; align-items: center; min-height: 5.2rem; padding: .85rem 1rem; border: 1px solid #ffffff24; border-radius: .85rem; background: linear-gradient(145deg, #ffffff16, #ffffff09); box-shadow: inset 0 1px #ffffff0a, 0 .45rem 1rem #03071225; }
+    .community-fact-icon { display: grid; grid-row: span 2; width: 2.5rem; height: 2.5rem; place-items: center; border-radius: .75rem; background: #ffffff18; font-size: 1.25rem; }
+    .community-fact strong { color: #fde68a; font-size: clamp(1.7rem, 3.2vw, 2.15rem); font-weight: 850; line-height: 1; letter-spacing: -.045em; text-shadow: 0 2px 14px #f59e0b45; }
+    .community-fact > span:last-child { margin-top: .2rem; color: #e2e8f0; font-size: .82rem; font-weight: 600; }
+    .home-sale-contact { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1rem; padding: 1rem 1.15rem; border: 1px solid #ffffff30; border-radius: .85rem; background: #ffffff12; }
+    .home-sale-contact h3 { margin: 0 0 .2rem; color: #fde68a; font-size: 1rem; }
+    .home-sale-contact p { margin: 0; color: #e2e8f0; font-size: .9rem; }
+    .home-sale-contact a { flex: 0 0 auto; color: #fff; font-weight: 750; text-decoration: underline; text-underline-offset: .2em; }
+    @media (max-width: 600px) {
+        .home-page { padding: .5rem; border-radius: 1rem; }
+        .home-hero { grid-template-columns: 1fr; gap: .5rem; padding: 2rem 1.4rem 1.2rem; border-radius: .8rem; }
+        .home-hero h1 { font-size: clamp(2.25rem, 11vw, 3.2rem); }
+        .home-visual { min-height: 220px; }
+        .home-building-art { width: min(75%, 260px); }
+        .home-visual-badge-top { right: 0; }
+        .home-visual-badge-bottom { left: 0; }
+        .home-steps { grid-template-columns: 1fr; gap: .35rem; }
+        .home-step { padding: .35rem .55rem; }
+        .home-sale-contact { align-items: flex-start; flex-direction: column; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+        .home-feature, .home-feature::after, .home-actions .button { transition: none; }
+        .home-feature:hover, .home-actions .button:hover { transform: none; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="home-page">
+    <section class="home-hero">
+        <div class="home-hero-copy">
+            <p class="home-eyebrow">A close-knit community in Ramnagar</p>
+            <h1>45 homes. One community that cares.</h1>
+            <p>Vijetha Nivas brings residents together across five floors, with a garden, children's play area, everyday conveniences, and a dedicated team to support the community.</p>
+            <div class="home-hero-sale">
+                <span>For queries</span>
+                <a href="tel:6309471352" aria-label="Call 6309471352"><span aria-hidden="true">☎</span> 6309471352</a>
+            </div>
+            <div class="home-actions">
+                {% if user.is_authenticated %}
+                    <a class="button button-primary" href="{% url 'dashboard' %}">Go to dashboard</a>
+                    {% if user.role == "resident" %}
+                        <a class="button button-secondary" href="{% url 'complaint_create' %}">Report an issue</a>
+                    {% endif %}
+                {% else %}
+                    <a class="button button-primary" href="{% url 'login' %}">Log in</a>
+                    <a class="button button-secondary" href="{% url 'community_information' %}">Explore the Vijetha Community</a>
+                {% endif %}
+            </div>
+            <span class="home-location">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="2.5"/></svg>
+                Ramnagar · Karimanagar
+            </span>
+        </div>
+        <div class="home-visual" aria-label="Illustration of the Vijetha Nivas apartment community">
+            <svg class="home-building-art" viewBox="0 0 360 310" role="img" aria-labelledby="home-building-title">
+                <title id="home-building-title">Colorful apartment building</title>
+                <defs>
+                    <linearGradient id="home-tower" x1="120" y1="30" x2="263" y2="270" gradientUnits="userSpaceOnUse"><stop stop-color="#fff"/><stop offset="1" stop-color="#dbeafe"/></linearGradient>
+                    <linearGradient id="home-side" x1="260" y1="70" x2="320" y2="265" gradientUnits="userSpaceOnUse"><stop stop-color="#c4b5fd"/><stop offset="1" stop-color="#818cf8"/></linearGradient>
+                    <linearGradient id="home-base" x1="80" y1="235" x2="300" y2="275" gradientUnits="userSpaceOnUse"><stop stop-color="#fbbf24"/><stop offset="1" stop-color="#fb7185"/></linearGradient>
+                </defs>
+                <circle cx="194" cy="143" r="126" fill="#ffffff0d" stroke="#ffffff30" stroke-width="1.5"/>
+                <circle cx="194" cy="143" r="103" fill="#ffffff09" stroke="#ffffff20"/>
+                <path d="M83 263h217l28 17H56l27-17Z" fill="#312e81" opacity=".42"/>
+                <path d="M105 88 164 54l65 34v175H105V88Z" fill="url(#home-tower)" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+                <path d="m229 88 43-21v196h-43V88Z" fill="url(#home-side)" stroke="#fff" stroke-width="3" stroke-linejoin="round"/>
+                <path d="m99 88 65-39 71 39-7 11-64-35-59 35-6-11Z" fill="#fde68a" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M126 107h21v24h-21zm42 0h21v24h-21zm42 0h9v24h-9zm-84 47h21v24h-21zm42 0h21v24h-21zm42 0h9v24h-9zm-84 47h21v24h-21zm42 0h21v24h-21zm42 0h9v24h-9z" fill="#7c3aed"/>
+                <path d="M126 109h21m-21 47h21m-21 47h21m21-94h21m-21 47h21m-21 47h21" stroke="#c4b5fd" stroke-width="2"/>
+                <path d="M165 218h27v45h-27v-45Z" fill="#4338ca"/>
+                <path d="M179 222v38" stroke="#c4b5fd" stroke-width="2"/>
+                <path d="M103 263h171l24 14H79l24-14Z" fill="url(#home-base)" stroke="#fff" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M92 282h202" stroke="#fff" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+                <path d="M73 253v-28m0 8c-13-17-25-10-24 0 9 2 17 2 24 0Zm0 10c12-17 24-10 23 0-9 2-17 2-23 0Z" fill="#86efac" stroke="#dcfce7" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M302 258v-33m0 11c-14-18-26-10-25 0 9 2 17 2 25 0Zm0 11c13-18 25-10 24 0-9 2-17 2-24 0Z" fill="#86efac" stroke="#dcfce7" stroke-width="2" stroke-linejoin="round"/>
+                <path d="M67 286h231" stroke="#ffffff8a" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <div class="home-visual-badge home-visual-badge-top">
+                <span class="home-visual-badge-icon" aria-hidden="true">🏠</span>
+                <span><strong>45 homes</strong><span>One connected community</span></span>
+            </div>
+            <div class="home-visual-badge home-visual-badge-bottom">
+                <span class="home-visual-badge-icon" aria-hidden="true">✨</span>
+                <span><strong>Here for you</strong><span>Maintenance made simple</span></span>
+            </div>
+        </div>
+    </section>
+    <section class="home-features" aria-label="Vijetha Nivas services">
+        <a class="home-feature" href="{% if user.is_authenticated %}{% if user.role == 'resident' %}{% url 'complaint_create' %}{% else %}{% url 'dashboard' %}{% endif %}{% else %}{% url 'login' %}?next={% url 'complaint_create' %}{% endif %}">
+            <span class="home-feature-icon" aria-hidden="true">🛠️</span>
+            <h2>Report an issue</h2>
+            <p>Tell the maintenance team what needs attention in your apartment or shared spaces.</p>
+        </a>
+        <a class="home-feature" href="{% url 'community_information' %}">
+            <span class="home-feature-icon" aria-hidden="true">🏘️</span>
+            <h2>Explore the Vijetha Community</h2>
+            <p>Discover apartment facilities, maintenance support, and life at Vijetha Nivas in Ramnagar, Karimnagar.</p>
+        </a>
+        <a class="home-feature" href="{% if user.is_authenticated %}{% if user.role == 'resident' %}{% url 'feedback_list' %}{% else %}{% url 'dashboard' %}{% endif %}{% else %}{% url 'login' %}?next={% url 'feedback_list' %}{% endif %}">
+            <span class="home-feature-icon" aria-hidden="true">✨</span>
+            <h2>Share feedback</h2>
+            <p>Rate completed maintenance work from 1 to 5 and leave a comment.</p>
+        </a>
+    </section>
+    <section class="home-steps" aria-label="How community maintenance works">
+        <div class="home-step"><span class="home-step-number">1</span><span><strong>Report an issue</strong><span>Tell us what needs attention</span></span></div>
+        <div class="home-step"><span class="home-step-number">2</span><span><strong>Our team gets to work</strong><span>Follow progress as it happens</span></span></div>
+        <div class="home-step"><span class="home-step-number">3</span><span><strong>Share your feedback</strong><span>Help us keep improving</span></span></div>
+    </section>
+    <section class="community-section">
+        <div class="community-heading">
+            <div>
+                <span class="community-eyebrow"><span aria-hidden="true">✦</span> A COMMUNITY TO CALL HOME</span>
+                <h2>Welcome to <span>Vijetha Nivas</span></h2>
+                <p>A welcoming community in Ramnagar, Karimanagar—with room to feel at home and a maintenance team ready to help keep things running smoothly.</p>
+            </div>
+            <span class="community-emblem" aria-hidden="true">🏡</span>
+        </div>
+        <div class="community-facts">
+            <div class="community-fact"><span class="community-fact-icon" aria-hidden="true">🏢</span><strong>5 floors</strong><span>Homes across five levels</span></div>
+            <div class="community-fact"><span class="community-fact-icon" aria-hidden="true">🚪</span><strong>9 flats</strong><span>On every floor</span></div>
+            <div class="community-fact"><span class="community-fact-icon" aria-hidden="true">🏠</span><strong>45 homes</strong><span>One community at Ramnagar</span></div>
+        </div>
+    </section>
+</div>
+{% endblock %}

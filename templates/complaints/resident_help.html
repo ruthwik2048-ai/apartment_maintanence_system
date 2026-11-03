@@ -1,0 +1,170 @@
+{% extends "complaints/base.html" %}
+{% block title %}Resident Help | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .resident-help { max-width: 820px; margin: 0 auto 2rem; }
+    .resident-help-hero { padding: clamp(1.5rem, 5vw, 2.25rem); border-radius: 1.2rem; color: #fff; background: linear-gradient(120deg, #4338ca, #7c3aed 55%, #db2777); box-shadow: 0 1rem 2.5rem #6d28d92b; }
+    .resident-help-hero p { margin: 0 0 .45rem; color: #fce7f3; font-weight: 700; letter-spacing: .05em; }
+    .resident-help-hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+    .resident-help-intro { margin: 1.2rem 0; }
+    .resident-help-intro p { margin: 0; }
+    .resident-help-alert { padding: .85rem 1rem; border: 1px solid #fecaca; border-left: 5px solid #dc2626; border-radius: .75rem; background: #fef2f2; color: #7f1d1d; }
+    .resident-help-alert p { margin: 0; }
+    .resident-help-contacts { padding: 1rem; border: 1px solid #c7d2fe; border-radius: .85rem; background: #fff; }
+    .resident-help-contacts h2 { margin: 0; color: #312e81; font-size: 1.1rem; }
+    .resident-help-contact-status { color: #647084; }
+    .resident-help-contact-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .65rem; margin: .75rem 0 0; padding: 0; list-style: none; }
+    .resident-help-contact { padding: .8rem; border: 1px solid #e4e7f2; border-left: 4px solid #8b5cf6; border-radius: .65rem; background: #fafaff; }
+    .resident-help-contact strong, .resident-help-contact span, .resident-help-contact a { display: block; overflow-wrap: anywhere; }
+    .resident-help-contact strong { color: #4338ca; }
+    .resident-help-contact span, .resident-help-contact a { margin-top: .2rem; color: #536575; font-size: .92rem; }
+    .resident-help-emergency-note { margin: .75rem 0 0; color: #991b1b; font-weight: 700; }
+    .resident-help-form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; margin: 0; padding: clamp(1rem, 4vw, 1.75rem); border: 1px solid #e0e7ff; border-radius: 1rem; background: #fff; box-shadow: 0 .75rem 2rem #4338ca12; }
+    .resident-help-form > p { min-width: 0; margin: 0; }
+    .resident-help-form > p:nth-of-type(4),
+    .resident-help-form > p:nth-of-type(5),
+    .resident-help-form > p:nth-of-type(6),
+    .resident-help-form > p:nth-of-type(7),
+    .resident-help-form > p:nth-of-type(10) { grid-column: 1 / -1; }
+    .resident-help-form label { margin: 0 0 .4rem; color: #3730a3; }
+    .resident-help-form input:not([type="file"]),
+    .resident-help-form select,
+    .resident-help-form textarea { box-sizing: border-box; width: 100%; max-width: 100%; padding: .75rem; border: 1px solid #cbd5e1; border-radius: .55rem; background: #fff; font: inherit; }
+    .resident-help-form input[type="checkbox"] { width: auto; }
+    .resident-help-form textarea { min-height: 120px; resize: vertical; }
+    .resident-help-form .helptext { display: block; margin-top: .3rem; color: #64748b; font-size: .85rem; }
+    .resident-help-form .errorlist { margin: .25rem 0 0; color: #b91c1c; }
+    .resident-help-submit { grid-column: 1 / -1; justify-self: start; padding: .8rem 1.2rem; border-radius: .6rem; background: linear-gradient(100deg, #4f46e5, #9333ea, #db2777); font-weight: 700; }
+    @media (max-width: 600px) {
+        .resident-help-form { grid-template-columns: 1fr; }
+        .resident-help-form > p:nth-of-type(n) { grid-column: 1; }
+        .resident-help-submit { justify-self: stretch; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="resident-help">
+    <section class="resident-help-hero">
+        <p>RESIDENT HELP</p>
+        <h1>How can maintenance help?</h1>
+    </section>
+    <div class="resident-help-intro" aria-live="polite">
+        <p>Hello, {{ user.get_full_name|default:user.username }}. Tell us what needs attention and where. For urgent situations, mark the emergency box and active maintenance staff will be notified.</p>
+    </div>
+    <section class="resident-help-contacts"
+        data-staff-url="{% url 'resident_help_staff' %}"
+        aria-live="polite"
+        aria-labelledby="resident-help-contacts-heading">
+        <h2 id="resident-help-contacts-heading">Maintenance contacts for your issue</h2>
+        <p class="resident-help-contact-status" data-contact-status>Select an issue category to find the relevant maintenance employees.</p>
+        <ul class="resident-help-contact-list" data-contact-list></ul>
+        <p class="resident-help-emergency-note" data-emergency-note hidden>
+            Emergency report selected: all active maintenance employees will be notified when you send this report.
+        </p>
+    </section>
+    <aside class="resident-help-alert">
+        <p><strong>Immediate danger?</strong> Contact emergency services or the apartment security desk directly as well. This help form does not replace emergency services.</p>
+    </aside>
+    <form class="resident-help-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="resident-help-submit" type="submit">Send to maintenance</button>
+    </form>
+    <p><a href="{% url 'dashboard' %}">Back to resident dashboard</a></p>
+</div>
+<script>
+    const scopeField = document.querySelector("[data-complaint-scope]");
+    const unitField = document.getElementById("id_unit");
+    const locationField = document.getElementById("id_common_area_location");
+    const unitRow = unitField?.closest("p");
+    const locationRow = locationField?.closest("p");
+    const categoryField = document.getElementById("id_category");
+    const emergencyField = document.getElementById("id_is_emergency");
+    const contactSection = document.querySelector(".resident-help-contacts");
+    const contactStatus = document.querySelector("[data-contact-status]");
+    const contactList = document.querySelector("[data-contact-list]");
+    const emergencyNote = document.querySelector("[data-emergency-note]");
+
+    function updateIssueAreaFields() {
+        const isCommonArea = scopeField.value === "common";
+        if (unitRow && locationRow) {
+            unitRow.hidden = isCommonArea;
+            locationRow.hidden = !isCommonArea;
+        }
+        unitField.required = !isCommonArea;
+        locationField.required = isCommonArea;
+    }
+
+    scopeField.addEventListener("change", updateIssueAreaFields);
+    updateIssueAreaFields();
+
+    function addContactDetail(item, text, href) {
+        const detail = document.createElement(href ? "a" : "span");
+        detail.textContent = text;
+        if (href) {
+            detail.href = href;
+        }
+        item.appendChild(detail);
+    }
+
+    async function updateMaintenanceContacts() {
+        const emergency = emergencyField.checked;
+        emergencyNote.hidden = !emergency;
+        contactList.replaceChildren();
+
+        if (!categoryField.value && !emergency) {
+            contactStatus.textContent = "Select an issue category to find the relevant maintenance employees.";
+            return;
+        }
+
+        contactStatus.textContent = "Finding maintenance employees...";
+        const parameters = new URLSearchParams({
+            category: categoryField.value,
+            emergency: emergency ? "true" : "false",
+        });
+
+        try {
+            const response = await fetch(
+                `${contactSection.dataset.staffUrl}?${parameters}`,
+                { headers: { Accept: "application/json" } },
+            );
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result.error || "Unable to load maintenance contacts.");
+            }
+
+            if (!result.staff.length) {
+                contactStatus.textContent = emergency
+                    ? "No active maintenance employees are available to notify."
+                    : "No active employee is listed for this issue category yet.";
+                return;
+            }
+
+            contactStatus.textContent = emergency
+                ? "All active maintenance employees will receive an alert."
+                : "Relevant maintenance employees for this issue:";
+            for (const staff of result.staff) {
+                const item = document.createElement("li");
+                item.className = "resident-help-contact";
+                const name = document.createElement("strong");
+                name.textContent = staff.name;
+                item.appendChild(name);
+                addContactDetail(item, staff.position);
+                if (staff.phone) {
+                    addContactDetail(item, staff.phone, `tel:${staff.phone}`);
+                }
+                if (staff.email) {
+                    addContactDetail(item, staff.email, `mailto:${staff.email}`);
+                }
+                contactList.appendChild(item);
+            }
+        } catch (error) {
+            contactStatus.textContent = error.message || "Unable to load maintenance contacts.";
+        }
+    }
+
+    categoryField.addEventListener("change", updateMaintenanceContacts);
+    emergencyField.addEventListener("change", updateMaintenanceContacts);
+    updateMaintenanceContacts();
+</script>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends "complaints/base.html" %}
+{% block title %}Register | Vijetha Nivas{% endblock %}
+{% block content %}
+<h1>Create a resident account</h1>
+<form class="card" method="post">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit">Register</button>
+</form>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "complaints/base.html" %}
+{% block title %}Rate completed work | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .feedback-page { max-width: 860px; margin: 0 auto 2rem; }
+    .feedback-heading {
+        margin-bottom: 1.25rem;
+        padding: clamp(1.5rem, 5vw, 2.25rem);
+        border-radius: 1.2rem;
+        color: #fff;
+        background: linear-gradient(120deg, #4338ca, #7c3aed 55%, #db2777);
+        box-shadow: 0 1rem 2.5rem #6d28d92b;
+    }
+    .feedback-heading h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+    .feedback-heading p { margin: .5rem 0 0; color: #f5f3ff; }
+    .feedback-item {
+        margin: 1rem 0;
+        padding: 1.25rem;
+        border: 1px solid #e4e7f2;
+        border-left: 5px solid #8b5cf6;
+        border-radius: .9rem;
+        background: linear-gradient(110deg, #fff, #f5f3ff);
+        box-shadow: 0 .45rem 1.3rem #4338ca10;
+    }
+    .feedback-item h2 { margin: 0 0 .4rem; color: #312e81; font-size: 1.2rem; }
+    .feedback-item p { margin: .35rem 0; color: #536575; }
+    .feedback-item .button { margin-top: .5rem; border-radius: .55rem; background: linear-gradient(100deg, #4f46e5, #9333ea, #db2777); font-weight: 700; }
+    .feedback-empty { padding: 1.5rem; border: 1px dashed #c4b5fd; border-radius: .9rem; background: #f5f3ff; color: #5b4b8a; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="feedback-page">
+    <header class="feedback-heading">
+        <h1>Rate completed work</h1>
+        <p>Choose a resolved maintenance request to rate the work from 1 to 5.</p>
+    </header>
+    {% for complaint in complaints %}
+        <section class="feedback-item">
+            <h2>{{ complaint.title }}</h2>
+            <p><strong>Area:</strong> {% if complaint.scope == "common" %}Common area · {{ complaint.common_area_location }}{% else %}{{ complaint.unit }}{% endif %} · <strong>Category:</strong> {{ complaint.category }}</p>
+            <p><strong>Status:</strong> {{ complaint.get_status_display }}{% if complaint.resolved_at %} · <strong>Completed:</strong> {{ complaint.resolved_at|date:"M j, Y" }}{% endif %}</p>
+            {% if complaint.is_emergency %}<p><strong>Emergency response rating requested</strong></p>{% endif %}
+            <a class="button" href="{% url 'complaint_detail' complaint.pk %}">{% if complaint.is_emergency %}Rate emergency response{% else %}Rate this work{% endif %}</a>
+        </section>
+    {% empty %}
+        <p class="feedback-empty">You have no resolved complaints waiting for feedback. Once maintenance completes a request, it will appear here.</p>
+    {% endfor %}
+</div>
+{% endblock %}

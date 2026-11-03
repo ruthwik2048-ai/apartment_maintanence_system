@@ -1,0 +1,55 @@
+{% extends "complaints/base.html" %}
+{% block title %}Flat {{ unit.unit_number }} Complaints | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .flat-complaints-hero {
+        padding: clamp(1.5rem, 5vw, 2.5rem);
+        border-radius: 1.2rem;
+        color: #fff;
+        background: linear-gradient(120deg, #4338ca, #7c3aed 55%, #db2777);
+        box-shadow: 0 1rem 2.5rem #6d28d92b;
+    }
+    .flat-complaints-hero p { margin: 0 0 .4rem; color: #fce7f3; font-weight: 700; }
+    .flat-complaints-hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .flat-complaints-hero span { display: block; margin-top: .5rem; color: #f5f3ff; }
+    .flat-complaints-count { margin: 1.2rem 0; padding: 1rem 1.2rem; border: 1px solid #e6e8f2; border-radius: .9rem; background: #fff; }
+    .flat-complaints-count strong { color: #312e81; font-size: 1.7rem; }
+    .flat-complaint { margin: 1rem 0; padding: 1.2rem; border: 1px solid #e4e7f2; border-left: 4px solid #8b5cf6; border-radius: .75rem; background: #fff; }
+    .flat-complaint h2 { margin: 0 0 .5rem; color: #4338ca; font-size: 1.2rem; }
+    .flat-complaint p { margin: .35rem 0; }
+    .flat-complaint-description { white-space: pre-wrap; }
+    .flat-complaints-empty { padding: 1.5rem; border: 1px dashed #c4b5fd; border-radius: .9rem; background: #f5f3ff; color: #5b4b8a; }
+</style>
+{% endblock %}
+{% block content %}
+<section class="flat-complaints-hero">
+    <p>FLAT COMPLAINTS</p>
+    <h1>Flat {{ unit.unit_number }}</h1>
+    <span>{{ unit.owner_name }} · {{ unit.apartment.name }}</span>
+</section>
+
+<section class="flat-complaints-count" aria-label="Complaint count">
+    <strong>{{ complaint_count }}</strong> complaint{{ complaint_count|pluralize }}
+</section>
+
+<h2>Issues raised</h2>
+{% if complaints %}
+    {% for complaint in complaints %}
+        <article class="flat-complaint">
+            <h2>{{ complaint.title }}</h2>
+            <p><strong>Issue:</strong> {{ complaint.category }}</p>
+            <p><strong>Status:</strong> {{ complaint.get_status_display }}</p>
+            <p><strong>Priority:</strong> {{ complaint.get_priority_display }}</p>
+            <p><strong>Reported by:</strong> {{ complaint.resident.get_full_name|default:complaint.resident.username }}</p>
+            <p><strong>Preferred visit time:</strong> {{ complaint.preferred_visit_time|default:"Not specified" }}</p>
+            <p><strong>Reported:</strong> {{ complaint.created_at|date:"M j, Y" }}</p>
+            <p class="flat-complaint-description">{{ complaint.description }}</p>
+            <a href="{% url 'complaint_detail' complaint.pk %}">Open complaint</a>
+        </article>
+    {% endfor %}
+{% else %}
+    <p class="flat-complaints-empty">No complaints have been raised for this flat.</p>
+{% endif %}
+
+<p><a href="{% url 'community_access' %}">Back to Vijetha Community Access</a></p>
+{% endblock %}

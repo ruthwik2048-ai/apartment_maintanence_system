@@ -1,0 +1,112 @@
+{% extends "complaints/base.html" %}
+{% block title %}Our Community | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .community-info { padding-bottom: 2rem; }
+    .community-info-hero {
+        position: relative;
+        overflow: hidden;
+        padding: clamp(1.7rem, 6vw, 3.5rem);
+        border: 1px solid #ffffff20;
+        border-radius: 1.3rem;
+        color: #fff;
+        background:
+            radial-gradient(ellipse at 86% 12%, #f9a8d44d, transparent 36%),
+            radial-gradient(ellipse at 8% 100%, #38bdf833, transparent 38%),
+            linear-gradient(125deg, #111827, #312e81 58%, #701a75);
+        box-shadow: 0 1.2rem 3rem #11182745;
+    }
+    .community-info-eyebrow { margin: 0 0 .75rem; color: #fde68a; font-size: .78rem; font-weight: 800; letter-spacing: .14em; }
+    .community-info-hero h1 { max-width: 700px; margin: 0; font-family: "Palatino Linotype", "Book Antiqua", Georgia, serif; font-size: clamp(2.2rem, 5.4vw, 3.7rem); font-weight: 700; line-height: 1.06; letter-spacing: -.025em; }
+    .community-info-hero h1 span { color: #fcd34d; }
+    .community-info-hero > p:last-child { max-width: 650px; margin: 1rem 0 0; color: #e0e7ff; font-size: 1.05rem; }
+    .community-info-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: .75rem; margin-top: 1.25rem; }
+    .community-info-stat { padding: .9rem 1rem; border: 1px solid #ffffff24; border-radius: .85rem; background: #ffffff12; backdrop-filter: blur(8px); }
+    .community-info-stat strong { display: block; color: #fde68a; font-size: 1.35rem; }
+    .community-info-stat span { color: #e0e7ff; font-size: .82rem; }
+    .community-info-heading { margin: 1.8rem 0 .8rem; color: #312e81; font-size: clamp(1.4rem, 3vw, 1.8rem); }
+    .community-info-facilities { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: .85rem; }
+    .community-info-facility { display: flex; align-items: flex-start; gap: .85rem; min-height: 100px; padding: 1rem; border: 1px solid #e0e7ff; border-radius: .9rem; background: linear-gradient(145deg, #fff, #f5f3ff); box-shadow: 0 .45rem 1.25rem #312e8110; }
+    .community-info-facility-icon { display: grid; width: 2.8rem; height: 2.8rem; flex: 0 0 auto; place-items: center; border-radius: .8rem; background: linear-gradient(135deg, #ede9fe, #fce7f3); font-size: 1.4rem; }
+    .community-info-facility h3 { margin: .15rem 0 .25rem; color: #312e81; font-size: 1rem; }
+    .community-info-facility p { margin: 0; color: #536575; font-size: .88rem; }
+    .community-info-sale { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.5rem; padding: 1.1rem 1.25rem; border: 1px solid #ddd6fe; border-radius: .9rem; background: linear-gradient(110deg, #f5f3ff, #fdf2f8); }
+    .community-info-sale h2 { margin: 0 0 .25rem; color: #312e81; font-size: 1.15rem; }
+    .community-info-sale p { margin: 0; color: #536575; }
+    .community-info-sale a { flex: 0 0 auto; color: #4338ca; font-weight: 750; text-decoration: underline; text-underline-offset: .2em; }
+    .community-info-back { margin-top: 1.4rem; }
+    .community-info-back a { display: inline-flex; align-items: center; gap: .45rem; color: #4338ca; font-weight: 750; text-decoration: none; }
+    .community-info-back a:hover { text-decoration: underline; }
+    @media (max-width: 600px) {
+        .community-info-stats { grid-template-columns: 1fr; }
+        .community-info-stat { display: flex; align-items: baseline; justify-content: space-between; gap: .7rem; }
+        .community-info-sale { align-items: flex-start; flex-direction: column; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="community-info">
+    <section class="community-info-hero">
+        <p class="community-info-eyebrow">WELCOME TO OUR GATED COMMUNITY</p>
+        <h1>Life at <span>Vijetha Nivas</span></h1>
+        <p>Discover a welcoming apartment community in Ramnagar, Karimanagar, with everyday amenities and a dedicated team to support residents.</p>
+        <div class="community-info-stats" aria-label="Community facts">
+            <div class="community-info-stat"><strong>5 floors</strong><span>Across the apartment</span></div>
+            <div class="community-info-stat"><strong>9 flats</strong><span>On every floor</span></div>
+            <div class="community-info-stat"><strong>45 homes</strong><span>One connected community</span></div>
+        </div>
+    </section>
+
+    <h2 class="community-info-heading">Apartment facilities</h2>
+    <section class="community-info-facilities" aria-label="Apartment facilities">
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">🛡️</span>
+            <div><h3>Watchman security</h3><p>Watchman staff support for the residential community.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">🧰</span>
+            <div><h3>Maintenance team</h3><p>Electrician, plumber, watchmen, and fire-work staff for maintenance support.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">🚗</span>
+            <div><h3>Vehicle parking</h3><p>Parking facility for residents.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">🛗</span>
+            <div><h3>Lift</h3><p>Lift access within the apartment building.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">📹</span>
+            <div><h3>CCTV cameras</h3><p>CCTV coverage for the apartment community.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">💧</span>
+            <div><h3>Water supply</h3><p>Water supply for residents.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">🔋</span>
+            <div><h3>Power backup</h3><p>Backup power facility for the community.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">🌳</span>
+            <div><h3>Garden</h3><p>Green outdoor space for residents.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">🛝</span>
+            <div><h3>Children's play area</h3><p>A play area for children in the community.</p></div>
+        </article>
+        <article class="community-info-facility">
+            <span class="community-info-facility-icon" aria-hidden="true">🧯</span>
+            <div><h3>Fire safety</h3><p>Fire-safety equipment for the building.</p></div>
+        </article>
+    </section>
+    <section class="community-info-sale" aria-label="Contact for queries">
+        <div>
+            <h2>For queries</h2>
+            <p>Contact us for more information about Vijetha Nivas.</p>
+        </div>
+        <a href="tel:6309471352" aria-label="Call 6309471352"><span aria-hidden="true">☎</span> 6309471352</a>
+    </section>
+    <p class="community-info-back"><a href="{% url 'home' %}"><span aria-hidden="true">←</span> Back to Vijetha Nivas home</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "complaints/base.html" %}
+{% block title %}Maintenance Collection | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .collection-page { padding-bottom: 2rem; }
+    .collection-hero {
+        position: relative;
+        overflow: hidden;
+        padding: clamp(1.5rem, 5vw, 2.5rem);
+        border-radius: 1.2rem;
+        color: #fff;
+        background:
+            radial-gradient(ellipse at 92% 10%, #f9a8d44d, transparent 38%),
+            linear-gradient(120deg, #172554, #4c1d95 58%, #9d174d);
+        box-shadow: 0 1rem 2.5rem #312e8130;
+    }
+    .collection-hero p { margin: 0 0 .4rem; color: #fcd34d; font-size: .78rem; font-weight: 800; letter-spacing: .12em; }
+    .collection-hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .collection-hero span { display: block; margin-top: .5rem; color: #e0e7ff; }
+    .collection-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(155px, 1fr)); gap: .85rem; margin: 1.2rem 0; }
+    .collection-stat { padding: 1rem 1.2rem; border: 1px solid #e6e8f2; border-radius: .9rem; background: #fff; box-shadow: 0 .45rem 1.3rem #312e8110; }
+    .collection-stat strong { display: block; color: #312e81; font-size: 1.55rem; }
+    .collection-stat span { color: #566477; }
+    .collection-stat:nth-child(1) { border-top: 4px solid #10b981; }
+    .collection-stat:nth-child(2) { border-top: 4px solid #f59e0b; }
+    .collection-stat:nth-child(3) { border-top: 4px solid #6366f1; }
+    .collection-progress { margin: 1.2rem 0; padding: 1rem 1.2rem; border: 1px solid #ddd6fe; border-radius: .9rem; background: linear-gradient(110deg, #fff, #f5f3ff); }
+    .collection-progress-label { display: flex; justify-content: space-between; gap: .75rem; margin-bottom: .6rem; color: #3730a3; font-weight: 700; }
+    .collection-progress-track { height: .7rem; overflow: hidden; border-radius: 999px; background: #e5e7eb; }
+    .collection-progress-value { height: 100%; border-radius: inherit; background: linear-gradient(90deg, #10b981, #34d399); transition: width .2s ease; }
+    .collection-table-wrap { overflow-x: auto; border: 1px solid #e5e7eb; border-radius: .9rem; background: #fff; box-shadow: 0 .45rem 1.3rem #312e810c; }
+    .collection-table-wrap table { min-width: 720px; margin: 0; }
+    .collection-table-wrap th { background: #eef2ff; color: #3730a3; }
+    .collection-table-wrap tr:hover td { background: #fafaff; }
+    .collection-status { display: inline-block; padding: .2rem .6rem; border-radius: 999px; font-size: .82rem; font-weight: 800; }
+    .collection-status-paid { background: #dcfce7; color: #166534; }
+    .collection-status-unpaid { background: #fef3c7; color: #92400e; }
+    .collection-status-overdue { background: #fee2e2; color: #991b1b; }
+    .collection-alert {
+        display: flex; align-items: center; gap: .75rem; margin: 1.2rem 0; padding: 1rem 1.1rem;
+        border: 1px solid #fecaca; border-left: 5px solid #dc2626; border-radius: .9rem;
+        background: linear-gradient(135deg, #fff1f2, #fff7ed); color: #7f1d1d; font-weight: 700;
+    }
+    .collection-alert-icon { display: inline-flex; align-items: center; justify-content: center; width: 2rem; height: 2rem; border-radius: 50%; background: #fee2e2; }
+    .collection-action { min-width: 6rem; padding: .45rem .7rem; border-radius: .5rem; font-weight: 700; }
+    .collection-action-paid { background: #059669; }
+    .collection-action-unpaid { background: #b45309; }
+    .collection-empty { padding: 1.25rem; border: 1px dashed #c4b5fd; border-radius: .9rem; background: #f5f3ff; color: #5b4b8a; }
+    @media (prefers-reduced-motion: reduce) { .collection-progress-value { transition: none; } }
+</style>
+{% endblock %}
+{% block content %}
+<div class="collection-page">
+    <section class="collection-hero">
+        <p>WATCHMAN COLLECTION DESK</p>
+        <h1>Maintenance fee collection</h1>
+        <span>{{ period_label }} · ₹1,500 per flat · Record payments for all active apartment flats.</span>
+    </section>
+
+    <section class="collection-stats" aria-label="Monthly maintenance collection summary">
+        <div class="collection-stat"><strong>{{ paid_count }} / {{ total_count }}</strong><span>Flats paid</span></div>
+        <div class="collection-stat"><strong>₹{{ total_collected|floatformat:0 }}</strong><span>Collected this month</span></div>
+        <div class="collection-stat"><strong>₹{{ total_due|floatformat:0 }}</strong><span>Still due</span></div>
+    </section>
+
+    <section class="collection-progress" aria-label="Collection progress">
+        <div class="collection-progress-label"><span>Monthly collection progress</span><span>{{ collection_percent }}%</span></div>
+        <div class="collection-progress-track" role="progressbar" aria-valuenow="{{ collection_percent }}" aria-valuemin="0" aria-valuemax="100" aria-label="Percentage of flats paid">
+            <div class="collection-progress-value" style="width: {{ collection_percent }}%"></div>
+        </div>
+    </section>
+
+    {% if has_overdue %}
+        <div class="collection-alert" role="alert" aria-live="assertive">
+            <span class="collection-alert-icon">⚠</span>
+            <span>Overdue maintenance fee: {{ overdue_count }} flat{% if overdue_count != 1 %}s{% endif %} still unpaid after the 2nd.</span>
+        </div>
+    {% endif %}
+
+    <h2>All flats · {{ period_label }}</h2>
+    {% if rows %}
+        <div class="collection-table-wrap">
+            <table>
+                <thead>
+                    <tr><th>Flat</th><th>Resident</th><th>Monthly fee</th><th>Payment status</th><th>Last updated by</th><th>Action</th></tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                        <tr id="flat-{{ row.unit.pk }}">
+                            <td><strong>{{ row.unit.unit_number }}</strong></td>
+                            <td>{{ row.unit.owner_name }}</td>
+                            <td>₹1,500</td>
+                            <td>
+                                {% if row.is_paid %}
+                                    <span class="collection-status collection-status-paid">Paid</span>
+                                    {% if row.payment.paid_at %}<br><small>{{ row.payment.paid_at|date:"M j, g:i A" }}</small>{% endif %}
+                                {% elif row.is_overdue %}
+                                    <span class="collection-status collection-status-overdue">Overdue</span>
+                                {% else %}
+                                    <span class="collection-status collection-status-unpaid">Unpaid</span>
+                                {% endif %}
+                            </td>
+                            <td>{% if row.payment and row.payment.recorded_by %}{{ row.payment.recorded_by.get_full_name|default:row.payment.recorded_by.username }}{% else %}—{% endif %}</td>
+                            <td>
+                                <form method="post">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="unit_id" value="{{ row.unit.pk }}">
+                                    {% if row.is_paid %}
+                                        <input type="hidden" name="status" value="unpaid">
+                                        <button class="collection-action collection-action-unpaid" type="submit">Mark unpaid</button>
+                                    {% else %}
+                                        <input type="hidden" name="status" value="paid">
+                                        <button class="collection-action collection-action-paid" type="submit">Mark paid</button>
+                                    {% endif %}
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="collection-empty">No flats are currently registered in active apartments.</p>
+    {% endif %}
+</div>
+{% endblock %}

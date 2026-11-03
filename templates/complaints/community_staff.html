@@ -1,0 +1,66 @@
+{% extends "complaints/base.html" %}
+{% block title %}Manage Maintenance Staff | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .staff-management { max-width: 760px; margin: 0 auto; padding-bottom: 2rem; }
+    .staff-management-hero {
+        padding: clamp(1.5rem, 5vw, 2.5rem);
+        border-radius: 1.2rem;
+        color: #fff;
+        background: linear-gradient(120deg, #4338ca, #7c3aed 55%, #db2777);
+        box-shadow: 0 1rem 2.5rem #6d28d92b;
+    }
+    .staff-management-hero p { margin: 0 0 .4rem; color: #fce7f3; font-weight: 700; letter-spacing: .05em; }
+    .staff-management-hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .staff-management-hero span { display: block; margin-top: .5rem; color: #f5f3ff; }
+    .staff-management-card { margin: 1.2rem 0; padding: clamp(1rem, 4vw, 1.5rem); border: 1px solid #e4e7f2; border-radius: .9rem; background: #fff; box-shadow: 0 .45rem 1.3rem #312e8110; }
+    .staff-management-card h2 { margin-top: 0; color: #312e81; }
+    .staff-management-form p { margin: .75rem 0; }
+    .staff-management-form input { box-sizing: border-box; width: 100%; margin-top: .25rem; padding: .7rem; border: 1px solid #cbd5e1; border-radius: .55rem; background: #fff; }
+    .staff-management-form input:focus { border-color: #7c3aed; outline: 3px solid #c4b5fd66; }
+    .staff-management-form > button { margin-top: .75rem; background: linear-gradient(100deg, #4f46e5, #9333ea, #db2777); font-weight: 700; }
+    .staff-management-list { display: grid; gap: .65rem; padding: 0; list-style: none; }
+    .staff-management-list li { padding: .85rem 1rem; border: 1px solid #e4e7f2; border-left: 4px solid #8b5cf6; border-radius: .65rem; background: linear-gradient(110deg, #fff, #f5f3ff); }
+    .staff-management-list strong, .staff-management-list span { display: block; }
+    .staff-management-list strong { color: #4338ca; }
+    .staff-management-list span { color: #536575; font-size: .92rem; }
+    .staff-management-empty { padding: 1rem; border: 1px dashed #c4b5fd; border-radius: .75rem; background: #f5f3ff; color: #5b4b8a; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="staff-management">
+    <section class="staff-management-hero">
+        <p>PRESIDENT ACCESS</p>
+        <h1>Manage Maintenance Staff</h1>
+        <span>Create staff accounts here, then assign each complaint to the appropriate worker.</span>
+    </section>
+
+    <section class="staff-management-card">
+        <h2>Add a staff member</h2>
+        <p>Set a username, password, and staff position. Watchmen can also sign in to record monthly maintenance collections.</p>
+        <form class="staff-management-form" method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit">Create staff account</button>
+        </form>
+    </section>
+
+    <section class="staff-management-card">
+        <h2>Active staff members</h2>
+        {% if staff_members %}
+            <ul class="staff-management-list">
+                {% for staff_member in staff_members %}
+                    <li>
+                        <strong>{{ staff_member.get_full_name|default:staff_member.username }}</strong>
+                        <span>Username: {{ staff_member.username }} · {{ staff_member.email }} · {{ staff_member.get_staff_position_display|default:"Maintenance staff" }} · Monthly salary: ₹{{ staff_member.salary|floatformat:2 }}</span>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% else %}
+            <p class="staff-management-empty">No active maintenance staff yet. Create an account above to enable complaint assignments.</p>
+        {% endif %}
+    </section>
+
+    <p><a href="{% url 'community_access' %}">Back to Vijetha Community Access</a></p>
+</div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "complaints/base.html" %}
+{% block title %}Maintenance Staff Login | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .staff-login {
+        max-width: 520px;
+        margin: clamp(1rem, 5vh, 3rem) auto;
+        padding: clamp(1.25rem, 5vw, 2.5rem);
+        border: 1px solid #e5e7eb;
+        border-radius: 1.25rem;
+        background:
+            radial-gradient(ellipse at 100% 0, #fbcfe866, transparent 38%),
+            linear-gradient(145deg, #fff, #f5f3ff);
+        box-shadow: 0 1rem 3rem #4338ca1c;
+    }
+    .staff-login-mark {
+        display: grid;
+        width: 3.5rem;
+        height: 3.5rem;
+        margin-bottom: 1rem;
+        place-items: center;
+        border-radius: 1rem;
+        background: linear-gradient(135deg, #6366f1, #db2777);
+        color: #fff;
+        font-size: 1.7rem;
+        box-shadow: 0 .5rem 1rem #7c3aed40;
+    }
+    .staff-login h1 { margin: 0; color: #312e81; font-size: 2rem; }
+    .staff-login-intro { margin: .45rem 0 1.25rem; color: #5b6475; }
+    .staff-login-form { margin: 0; padding: 1.25rem; border: 1px solid #e0e7ff; border-radius: .9rem; background: #ffffffd9; }
+    .staff-login-form p { margin: .75rem 0; }
+    .staff-login-form label { color: #3730a3; }
+    .staff-login-form input { box-sizing: border-box; width: 100%; margin-top: .25rem; padding: .75rem; border: 1px solid #cbd5e1; border-radius: .55rem; background: #fff; }
+    .staff-login-form input:focus { border-color: #7c3aed; outline: 3px solid #c4b5fd66; }
+    .staff-login-form button[type="submit"] { width: 100%; margin-top: .75rem; padding: .8rem 1rem; border-radius: .6rem; background: linear-gradient(100deg, #4f46e5, #9333ea, #db2777); font-weight: 700; }
+    .staff-login-form button[type="submit"]:hover { filter: brightness(1.08); }
+    .staff-login-home { margin: 1.2rem 0 0; text-align: center; }
+    .staff-login-home a { color: #6d28d9; font-weight: 700; }
+</style>
+{% endblock %}
+{% block content %}
+<section class="staff-login">
+    <div class="staff-login-mark" aria-hidden="true">🛠</div>
+    <h1>Maintenance Staff Login</h1>
+    <p class="staff-login-intro">Sign in to view your assigned complaints and update work status.</p>
+    <form class="staff-login-form" method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit">Sign in to staff portal</button>
+    </form>
+    <p class="staff-login-home"><a href="{% url 'home' %}">Return to resident home page</a></p>
+</section>
+{% endblock %}

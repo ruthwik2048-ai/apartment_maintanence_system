@@ -1,0 +1,141 @@
+{% extends "complaints/base.html" %}
+{% block title %}Report an issue | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .report-page {
+        max-width: 820px;
+        margin: 0 auto 2rem;
+    }
+    .report-hero {
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 1.25rem;
+        padding: clamp(1.5rem, 5vw, 2.25rem);
+        border-radius: 1.2rem;
+        color: #fff;
+        background: linear-gradient(120deg, #4338ca, #7c3aed 55%, #db2777);
+        box-shadow: 0 1rem 2.5rem #6d28d92b;
+    }
+    .report-hero::after {
+        position: absolute;
+        top: -4rem;
+        right: -2rem;
+        width: 12rem;
+        height: 12rem;
+        border: 1.5rem solid #ffffff1c;
+        border-radius: 50%;
+        content: "";
+        pointer-events: none;
+    }
+    .report-eyebrow {
+        margin: 0 0 .45rem;
+        color: #fce7f3;
+        font-size: .85rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+    }
+    .report-hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.5rem); }
+    .report-hero p:last-child { max-width: 560px; margin: .55rem 0 0; color: #f5f3ff; }
+    .report-form {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1rem;
+        margin: 0;
+        padding: clamp(1rem, 4vw, 1.75rem);
+        border: 1px solid #e0e7ff;
+        border-radius: 1rem;
+        background: linear-gradient(145deg, #fff, #faf8ff);
+        box-shadow: 0 .75rem 2rem #4338ca12;
+    }
+    .report-form > p { min-width: 0; margin: 0; }
+    .report-form > p:nth-of-type(4),
+    .report-form > p:nth-of-type(5),
+    .report-form > p:nth-of-type(6),
+    .report-form > p:nth-of-type(7),
+    .report-form > p:nth-of-type(10) { grid-column: 1 / -1; }
+    .report-form label { margin: 0 0 .4rem; color: #3730a3; }
+    .report-form input:not([type="file"]),
+    .report-form select,
+    .report-form textarea {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        padding: .75rem;
+        border: 1px solid #cbd5e1;
+        border-radius: .55rem;
+        background: #fff;
+        color: #17212b;
+        font: inherit;
+    }
+    .report-form input[type="file"] {
+        box-sizing: border-box;
+        width: 100%;
+        max-width: 100%;
+        padding: .55rem;
+        border: 1px dashed #a78bfa;
+        border-radius: .55rem;
+        background: #f5f3ff;
+        color: #4c1d95;
+    }
+    .report-form textarea { min-height: 130px; resize: vertical; }
+    .report-form input:focus,
+    .report-form select:focus,
+    .report-form textarea:focus {
+        border-color: #7c3aed;
+        outline: 3px solid #c4b5fd66;
+    }
+    .report-form .helptext { display: block; margin-top: .3rem; color: #64748b; font-size: .85rem; }
+    .report-form .errorlist { margin: .25rem 0 0; padding-left: 1.2rem; color: #b91c1c; }
+    .report-form .nonfield { grid-column: 1 / -1; margin: 0; padding: .8rem 1rem; border-radius: .55rem; background: #fef2f2; color: #b91c1c; }
+    .report-submit {
+        grid-column: 1 / -1;
+        justify-self: start;
+        padding: .8rem 1.2rem;
+        border-radius: .6rem;
+        background: linear-gradient(100deg, #4f46e5, #9333ea, #db2777);
+        font-weight: 700;
+    }
+    .report-submit:hover { filter: brightness(1.08); }
+    @media (max-width: 600px) {
+        .report-form { grid-template-columns: 1fr; }
+        .report-form > p:nth-of-type(n) { grid-column: 1; }
+        .report-submit { justify-self: stretch; }
+        .report-hero { border-radius: 1rem; }
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="report-page">
+    <section class="report-hero">
+        <p class="report-eyebrow">Help us take care of your community</p>
+        <h1>Report an issue</h1>
+        <p>Share the details below and the apartment maintenance team will be notified. You can include a convenient time for staff to visit your flat.</p>
+    </section>
+    <form class="report-form" method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button class="report-submit" type="submit">Submit complaint</button>
+    </form>
+</div>
+<script>
+    const scopeField = document.querySelector("[data-complaint-scope]");
+    const unitField = document.getElementById("id_unit");
+    const locationField = document.getElementById("id_common_area_location");
+    const unitRow = unitField?.closest("p");
+    const locationRow = locationField?.closest("p");
+
+    function updateIssueAreaFields() {
+        const isCommonArea = scopeField.value === "common";
+        if (unitRow && locationRow) {
+            unitRow.hidden = isCommonArea;
+            locationRow.hidden = !isCommonArea;
+        }
+        unitField.required = !isCommonArea;
+        locationField.required = isCommonArea;
+    }
+
+    scopeField.addEventListener("change", updateIssueAreaFields);
+    updateIssueAreaFields();
+</script>
+{% endblock %}
