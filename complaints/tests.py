@@ -1009,6 +1009,12 @@ class ComplaintWorkflowTests(TestCase):
             owner_name="Resident",
             resident=self.resident,
         )
+        unlinked_unit = Unit.objects.create(
+            apartment=apartment,
+            unit_number="102",
+            owner_name="Unlinked Resident",
+        )
+        existing_admin_password = self.admin.password
         output = StringIO()
 
         call_command("repair_initial_logins", stdout=output)
@@ -1019,12 +1025,15 @@ class ComplaintWorkflowTests(TestCase):
         call_command("repair_initial_logins", "--apply", stdout=StringIO())
 
         self.resident.refresh_from_db()
-        self.admin.refresh_from_db()
         self.assertTrue(self.resident.check_password(unit.unit_number))
-        self.assertTrue(self.admin.check_password("test-admin-pass-456"))
+        self.admin.refresh_from_db()
+        self.assertEqual(self.admin.password, existing_admin_password)
         president = User.objects.get(username__iexact="ruthwik")
         self.assertEqual(president.role, User.Role.ADMIN)
         self.assertTrue(president.check_password("180605"))
+        unlinked_unit.refresh_from_db()
+        self.assertIsNotNone(unlinked_unit.resident_id)
+        self.assertTrue(unlinked_unit.resident.check_password(unlinked_unit.unit_number))
         for name in ("sandeep", "ganesh", "suresh", "deeraj", "ramesh"):
             staff_member = User.objects.get(username=name)
             self.assertEqual(staff_member.role, User.Role.STAFF)
