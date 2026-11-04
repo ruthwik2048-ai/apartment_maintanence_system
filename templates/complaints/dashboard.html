@@ -119,7 +119,7 @@
                 <ul class="dashboard-chart-legend">
                     {% for segment in complaint_chart %}
                         <li>
-                            <span class="dashboard-chart-swatch" style="background: {{ segment.color }}" aria-hidden="true"></span>
+                            <svg class="dashboard-chart-swatch" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="{{ segment.color }}"></circle></svg>
                             <span>{{ segment.label }}</span>
                             <strong>{{ segment.count }}{% if summary.total %} · {{ segment.percentage }}%{% endif %}</strong>
                         </li>
@@ -159,7 +159,7 @@
             <ul class="dashboard-chart-legend">
                 {% for segment in maintenance_chart %}
                     <li>
-                        <span class="dashboard-chart-swatch" style="background: {{ segment.color }}" aria-hidden="true"></span>
+                        <svg class="dashboard-chart-swatch" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="8" r="8" fill="{{ segment.color }}"></circle></svg>
                         <span>{{ segment.label }}</span>
                         <strong>₹{{ segment.amount|floatformat:2 }}{% if maintenance_total %} · {{ segment.percentage }}%{% endif %}</strong>
                     </li>
