@@ -993,6 +993,43 @@ class ComplaintWorkflowTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("_auth_user_id", self.client.session)
 
+    @patch("complaints.management.commands.repair_initial_logins.getpass")
+    def test_initial_login_repair_command_sets_accounts_without_storing_passwords(
+        self,
+        mock_getpass,
+    ):
+        apartment = Apartment.objects.create(
+            name="Vijetha Nivas",
+            address="Ramnagar",
+            city="Karimanagar",
+        )
+        unit = Unit.objects.create(
+            apartment=apartment,
+            unit_number="101",
+            owner_name="Resident",
+            resident=self.resident,
+        )
+        output = StringIO()
+
+        call_command("repair_initial_logins", stdout=output)
+        self.assertIn("No accounts changed", output.getvalue())
+        self.assertFalse(mock_getpass.called)
+
+        mock_getpass.side_effect = ("180605", "180605", "Vijetha", "Vijetha")
+        call_command("repair_initial_logins", "--apply", stdout=StringIO())
+
+        self.resident.refresh_from_db()
+        self.admin.refresh_from_db()
+        self.assertTrue(self.resident.check_password(unit.unit_number))
+        self.assertTrue(self.admin.check_password("test-admin-pass-456"))
+        president = User.objects.get(username__iexact="ruthwik")
+        self.assertEqual(president.role, User.Role.ADMIN)
+        self.assertTrue(president.check_password("180605"))
+        for name in ("sandeep", "ganesh", "suresh", "deeraj", "ramesh"):
+            staff_member = User.objects.get(username=name)
+            self.assertEqual(staff_member.role, User.Role.STAFF)
+            self.assertTrue(staff_member.check_password("Vijetha"))
+
     def test_resident_can_log_in_with_owner_name_and_flat_number_password(self):
         self.unit.owner_name = "RAVI"
         self.unit.unit_number = "101"
@@ -1068,6 +1105,10 @@ class ComplaintWorkflowTests(TestCase):
 
     def test_community_access_is_available_to_admin_role_without_django_staff(self):
         complaint = self.create_complaint()
+        self.create_complaint(
+            title="Completed kitchen tap",
+            status=Complaint.Status.COMPLETED,
+        )
         self.assertFalse(self.admin.is_staff)
         self.client.force_login(self.admin)
 
@@ -1082,6 +1123,10 @@ class ComplaintWorkflowTests(TestCase):
         )
         self.assertContains(response, f"Flat {self.unit.unit_number}")
         self.assertContains(response, self.unit.owner_name)
+        first_unit = response.context["units"][0]
+        self.assertEqual(first_unit.complaint_count, 2)
+        self.assertEqual(first_unit.open_complaint_count, 1)
+        self.assertContains(response, "1 open · 2 total complaints")
         self.assertContains(response, f'href="{reverse("community_staff")}"')
         self.assertContains(
             response,

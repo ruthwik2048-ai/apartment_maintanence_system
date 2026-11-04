@@ -86,13 +86,14 @@
         <p class="community-admin-empty">No active maintenance staff to display.</p>
     {% endif %}
 
-    <h2 class="community-admin-heading">Flat owners</h2>
+    <h2 class="community-admin-heading">Flats and complaints</h2>
     {% if units %}
-        <section class="community-directory" aria-label="Flat number and owner directory">
+        <section class="community-directory" aria-label="Flat directory and complaint counts">
             {% for unit in units %}
                 <a class="community-directory-item" href="{% url 'community_unit_detail' unit.pk %}" aria-label="Open complaints for flat {{ unit.unit_number }}">
                     <strong>Flat {{ unit.unit_number }}</strong>
                     <span>{{ unit.owner_name }} · {{ unit.apartment.name }}</span>
+                    <span>{{ unit.open_complaint_count }} open · {{ unit.complaint_count }} total complaints</span>
                 </a>
             {% endfor %}
         </section>

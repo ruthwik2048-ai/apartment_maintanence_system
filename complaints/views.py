@@ -450,9 +450,26 @@ def community_access(request):
                 (staff_member.salary for staff_member in staff_members),
                 Decimal("0.00"),
             ),
-            "units": Unit.objects.filter(apartment__is_active=True)
-            .select_related("apartment")
-            .order_by("apartment__name", "unit_number"),
+            "units": (
+                Unit.objects.filter(apartment__is_active=True)
+                .select_related("apartment")
+                .annotate(
+                    complaint_count=Count("complaints"),
+                    open_complaint_count=Count(
+                        "complaints",
+                        filter=Q(
+                            complaints__status__in=(
+                                Complaint.Status.RAISED,
+                                Complaint.Status.ASSIGNED,
+                                Complaint.Status.PENDING,
+                                Complaint.Status.IN_PROGRESS,
+                                Complaint.Status.REOPENED,
+                            )
+                        ),
+                    ),
+                )
+                .order_by("apartment__name", "unit_number")
+            ),
         },
     )
 

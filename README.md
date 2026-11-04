@@ -53,6 +53,16 @@ The command can also be run manually from the 2nd of the month:
 
 For deployment, set `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, and `DJANGO_ALLOWED_HOSTS` in the environment. The default SQLite database and secret are intended for local development.
 
+### Repairing initial logins on Render
+
+The local `db.sqlite3` is not deployed with the source code, so local accounts and passwords are not automatically copied to Render. After confirming the Render service is connected to the expected database and the latest code is deployed, open its Shell and run:
+
+```sh
+python manage.py repair_initial_logins --apply
+```
+
+The command asks for the president and staff passwords interactively, resets each linked resident account's password to its flat number, and creates any missing resident or staff accounts. It preserves existing staff positions and refuses to change accounts with unexpected roles or inactive status. Run it only when you intend to reset these initial login credentials.
+
 ## Tests
 
 ```powershell
