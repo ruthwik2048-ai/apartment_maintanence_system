@@ -20,7 +20,16 @@ from .forms import (
     MaintenanceStaffCreationForm,
     WorkUpdateForm,
 )
-from .models import Category, Complaint, Feedback, MaintenancePayment, Notification, Unit, WorkLog
+from .models import (
+    MONTHLY_MAINTENANCE_FEE,
+    Category,
+    Complaint,
+    Feedback,
+    MaintenancePayment,
+    Notification,
+    Unit,
+    WorkLog,
+)
 
 User = get_user_model()
 
@@ -133,7 +142,7 @@ def maintenance_collection(request):
             unit=unit,
             period=period,
             defaults={
-                "amount": Decimal("1500.00"),
+                "amount": MONTHLY_MAINTENANCE_FEE,
                 "status": status,
                 "recorded_by": request.user,
                 "paid_at": paid_at,
@@ -185,8 +194,8 @@ def maintenance_collection(request):
             "unpaid_count": total_count - paid_count,
             "total_count": total_count,
             "collection_percent": round(paid_count * 100 / total_count) if total_count else 0,
-            "total_collected": Decimal("1500.00") * paid_count,
-            "total_due": Decimal("1500.00") * (total_count - paid_count),
+            "total_collected": MONTHLY_MAINTENANCE_FEE * paid_count,
+            "total_due": MONTHLY_MAINTENANCE_FEE * (total_count - paid_count),
             "has_overdue": overdue_count > 0,
             "overdue_count": overdue_count,
         },
@@ -270,11 +279,26 @@ def staff_portal(request):
 @login_required
 def dashboard(request):
     resident_unit = None
+    resident_maintenance_payment = None
+    resident_maintenance_period = None
+    resident_maintenance_status = None
     if request.user.role == User.Role.RESIDENT:
         resident_unit = (
             request.user.units.select_related("apartment")
             .order_by("unit_number")
             .first()
+        )
+        resident_maintenance_period = timezone.localdate().replace(day=1)
+        if resident_unit is not None:
+            resident_maintenance_payment = MaintenancePayment.objects.filter(
+                unit=resident_unit,
+                period=resident_maintenance_period,
+            ).first()
+        resident_maintenance_status = (
+            "Paid"
+            if resident_maintenance_payment
+            and resident_maintenance_payment.status == MaintenancePayment.Status.PAID
+            else "Due"
         )
 
     complaints = Complaint.objects.select_related(
@@ -338,17 +362,29 @@ def dashboard(request):
             )
             offset += length
 
-    maintenance_totals = MaintenancePayment.objects.filter(
-        unit__apartment__is_active=True,
-    ).aggregate(
-        total=Sum("amount"),
-        received=Sum(
-            "amount",
-            filter=Q(status=MaintenancePayment.Status.PAID),
-        ),
-    )
-    maintenance_total = maintenance_totals["total"] or Decimal("0.00")
-    maintenance_received = maintenance_totals["received"] or Decimal("0.00")
+    if request.user.role == User.Role.RESIDENT and resident_unit is not None:
+        maintenance_total = (
+            resident_maintenance_payment.amount
+            if resident_maintenance_payment
+            else MONTHLY_MAINTENANCE_FEE
+        )
+        maintenance_received = (
+            maintenance_total
+            if resident_maintenance_status == "Paid"
+            else Decimal("0.00")
+        )
+    else:
+        maintenance_totals = MaintenancePayment.objects.filter(
+            unit__apartment__is_active=True,
+        ).aggregate(
+            total=Sum("amount"),
+            received=Sum(
+                "amount",
+                filter=Q(status=MaintenancePayment.Status.PAID),
+            ),
+        )
+        maintenance_total = maintenance_totals["total"] or Decimal("0.00")
+        maintenance_received = maintenance_totals["received"] or Decimal("0.00")
     maintenance_due = maintenance_total - maintenance_received
     maintenance_chart = []
     circumference = 339.292
@@ -383,6 +419,9 @@ def dashboard(request):
             "maintenance_total": maintenance_total,
             "maintenance_received": maintenance_received,
             "maintenance_due": maintenance_due,
+            "resident_maintenance_payment": resident_maintenance_payment,
+            "resident_maintenance_period": resident_maintenance_period,
+            "resident_maintenance_status": resident_maintenance_status,
             "average_rating": round(average_rating, 2),
             "notifications": request.user.notifications.filter(is_read=False)[:5],
             "resident_unit": resident_unit,

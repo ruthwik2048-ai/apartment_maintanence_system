@@ -8,6 +8,9 @@ from django.db.models.functions import Lower
 from django.utils import timezone
 
 
+MONTHLY_MAINTENANCE_FEE = Decimal("1500.00")
+
+
 class User(AbstractUser):
     class Role(models.TextChoices):
         RESIDENT = "resident", "Resident"
@@ -117,7 +120,7 @@ class MaintenancePayment(models.Model):
     amount = models.DecimalField(
         max_digits=8,
         decimal_places=2,
-        default=Decimal("1500.00"),
+        default=MONTHLY_MAINTENANCE_FEE,
     )
     status = models.CharField(
         max_length=10,

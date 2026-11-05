@@ -882,6 +882,55 @@ class ComplaintWorkflowTests(TestCase):
         self.assertContains(response, "Report a complaint to see your progress here.")
         self.assertContains(response, "class=\"dashboard-donut-track\"")
 
+    def test_resident_dashboard_shows_current_flat_maintenance_due_or_paid(self):
+        period = timezone.localdate().replace(day=1)
+        resident_payment = MaintenancePayment.objects.create(
+            unit=self.unit,
+            period=period,
+            amount="1500.00",
+            status=MaintenancePayment.Status.PAID,
+        )
+        MaintenancePayment.objects.create(
+            unit=self.other_unit,
+            period=period,
+            amount="2500.00",
+            status=MaintenancePayment.Status.UNPAID,
+        )
+        self.client.force_login(self.resident)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.context["resident_maintenance_payment"], resident_payment)
+        self.assertEqual(response.context["resident_maintenance_status"], "Paid")
+        self.assertEqual(response.context["maintenance_total"], Decimal("1500.00"))
+        self.assertEqual(response.context["maintenance_received"], Decimal("1500.00"))
+        self.assertEqual(response.context["maintenance_due"], Decimal("0.00"))
+        self.assertContains(response, "Your maintenance")
+        self.assertContains(response, "Paid")
+        self.assertContains(response, f'href="{reverse("complaint_create")}"')
+        self.assertNotContains(response, "2500.00")
+
+        resident_payment.status = MaintenancePayment.Status.UNPAID
+        resident_payment.save(update_fields=("status",))
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.context["resident_maintenance_status"], "Due")
+        self.assertEqual(response.context["maintenance_received"], Decimal("0.00"))
+        self.assertEqual(response.context["maintenance_due"], Decimal("1500.00"))
+        self.assertContains(response, "payment is still outstanding")
+
+    def test_resident_dashboard_shows_due_when_current_month_payment_is_not_recorded(self):
+        self.client.force_login(self.resident)
+
+        response = self.client.get(reverse("dashboard"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIsNone(response.context["resident_maintenance_payment"])
+        self.assertEqual(response.context["resident_maintenance_status"], "Due")
+        self.assertEqual(response.context["maintenance_due"], Decimal("1500.00"))
+        self.assertContains(response, "No payment has been recorded for this month yet.")
+
     def test_staff_dashboard_does_not_show_resident_complaint_chart(self):
         self.client.force_login(self.staff)
 
@@ -910,19 +959,34 @@ class ComplaintWorkflowTests(TestCase):
                 response = self.client.get(reverse("dashboard"))
 
                 self.assertEqual(response.status_code, 200)
-                self.assertEqual(response.context["maintenance_total"], 3500)
-                self.assertEqual(response.context["maintenance_received"], 1500)
-                self.assertEqual(response.context["maintenance_due"], 2000)
-                self.assertEqual(
-                    [
-                        (segment["label"], segment["amount"])
-                        for segment in response.context["maintenance_chart"]
-                    ],
-                    [("Received", 1500), ("Due", 2000)],
-                )
-                self.assertContains(response, "Maintenance dues and receipts")
-                self.assertContains(response, "₹1500.00")
-                self.assertContains(response, "₹2000.00")
+                if dashboard_user.role == User.Role.RESIDENT:
+                    self.assertEqual(response.context["maintenance_total"], 1500)
+                    self.assertEqual(response.context["maintenance_received"], 0)
+                    self.assertEqual(response.context["maintenance_due"], 1500)
+                    self.assertEqual(
+                        [
+                            (segment["label"], segment["amount"])
+                            for segment in response.context["maintenance_chart"]
+                        ],
+                        [("Received", Decimal("0.00")), ("Due", Decimal("1500.00"))],
+                    )
+                    self.assertContains(response, "Your maintenance")
+                    self.assertContains(response, "Due")
+                    self.assertNotContains(response, "₹2000.00")
+                else:
+                    self.assertEqual(response.context["maintenance_total"], 3500)
+                    self.assertEqual(response.context["maintenance_received"], 1500)
+                    self.assertEqual(response.context["maintenance_due"], 2000)
+                    self.assertEqual(
+                        [
+                            (segment["label"], segment["amount"])
+                            for segment in response.context["maintenance_chart"]
+                        ],
+                        [("Received", 1500), ("Due", 2000)],
+                    )
+                    self.assertContains(response, "Maintenance dues and receipts")
+                    self.assertContains(response, "₹1500.00")
+                    self.assertContains(response, "₹2000.00")
 
     def test_president_login_accepts_username_with_different_capitalization(self):
         president = User.objects.create_user(

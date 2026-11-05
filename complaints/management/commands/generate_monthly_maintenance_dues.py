@@ -1,10 +1,8 @@
-from decimal import Decimal
-
 from django.core.management.base import BaseCommand
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
-from complaints.models import MaintenancePayment, Unit
+from complaints.models import MONTHLY_MAINTENANCE_FEE, MaintenancePayment, Unit
 
 
 class Command(BaseCommand):
@@ -22,7 +20,7 @@ class Command(BaseCommand):
             MaintenancePayment(
                 unit_id=unit_id,
                 period=period,
-                amount=Decimal("1500.00"),
+                amount=MONTHLY_MAINTENANCE_FEE,
                 status=MaintenancePayment.Status.UNPAID,
             )
             for unit_id in active_units.values_list("pk", flat=True)
@@ -41,6 +39,7 @@ class Command(BaseCommand):
         self.stdout.write(
             self.style.SUCCESS(
                 f"Maintenance dues are ready for {period:%B %Y}: "
-                f"{created_count} active flats tracked at ₹1,500 per flat."
+                f"{created_count} active flats tracked at "
+                f"₹{MONTHLY_MAINTENANCE_FEE:,.0f} per flat."
             )
         )

@@ -51,6 +51,9 @@
     .dashboard-chart-swatch { width: .8rem; height: .8rem; flex: 0 0 auto; border-radius: 50%; }
     .dashboard-chart-legend strong { margin-left: auto; color: #312e81; }
     .dashboard-chart-empty { margin: 1rem 0 0; color: #647084; }
+    .dashboard-payment-status { display: inline-block; margin-top: .75rem; padding: .3rem .75rem; border-radius: 999px; font-weight: 800; }
+    .dashboard-payment-status-paid { background: #d1fae5; color: #065f46; }
+    .dashboard-payment-status-due { background: #fef3c7; color: #92400e; }
     .dashboard-section-title { margin: 1.7rem 0 .75rem; color: #312e81; }
     .dashboard-notifications { padding: 1rem 1.25rem; border: 1px solid #c7d2fe; border-left: 5px solid #6366f1; border-radius: .85rem; background: linear-gradient(110deg, #eef2ff, #fff); }
     .dashboard-notifications h2 { margin-top: 0; color: #4338ca; }
@@ -132,7 +135,7 @@
         </section>
     {% endif %}
     <section class="dashboard-maintenance-chart" aria-labelledby="maintenance-chart-title">
-        <div class="dashboard-donut" role="img" aria-label="All-time recorded maintenance payments: ₹{{ maintenance_received|floatformat:2 }} received and ₹{{ maintenance_due|floatformat:2 }} due.">
+        <div class="dashboard-donut" role="img" aria-label="{% if user.role == 'resident' %}Your maintenance fee for {{ resident_maintenance_period|date:'F Y' }}: {{ resident_maintenance_status }}.{% else %}All-time recorded maintenance payments: ₹{{ maintenance_received|floatformat:2 }} received and ₹{{ maintenance_due|floatformat:2 }} due.{% endif %}">
             <svg viewBox="0 0 120 120" aria-hidden="true">
                 <circle class="dashboard-donut-track" cx="60" cy="60" r="54"></circle>
                 {% for segment in maintenance_chart %}
@@ -150,12 +153,25 @@
             </svg>
             <div class="dashboard-donut-center">
                 <strong>₹{{ maintenance_total|floatformat:2 }}</strong>
-                <span>tracked</span>
+                <span>{% if user.role == "resident" %}this month{% else %}tracked{% endif %}</span>
             </div>
         </div>
         <div>
-            <h2 id="maintenance-chart-title">Maintenance dues and receipts</h2>
-            <p class="dashboard-maintenance-chart-intro">All-time totals from recorded payments in active apartments.</p>
+            {% if user.role == "resident" %}
+                <h2 id="maintenance-chart-title">Your maintenance · {{ resident_maintenance_period|date:"F Y" }}</h2>
+                <p class="dashboard-maintenance-chart-intro">Flat {{ resident_unit.unit_number }} monthly maintenance status.</p>
+                <span class="dashboard-payment-status {% if resident_maintenance_status == 'Paid' %}dashboard-payment-status-paid{% else %}dashboard-payment-status-due{% endif %}" role="status">{{ resident_maintenance_status }}</span>
+                {% if resident_maintenance_status == "Paid" and resident_maintenance_payment.paid_at %}
+                    <p class="dashboard-chart-empty">Payment recorded {{ resident_maintenance_payment.paid_at|date:"M j, Y" }}.</p>
+                {% elif not resident_maintenance_payment %}
+                    <p class="dashboard-chart-empty">No payment has been recorded for this month yet.</p>
+                {% else %}
+                    <p class="dashboard-chart-empty">This month's payment is still outstanding.</p>
+                {% endif %}
+            {% else %}
+                <h2 id="maintenance-chart-title">Maintenance dues and receipts</h2>
+                <p class="dashboard-maintenance-chart-intro">All-time totals from recorded payments in active apartments.</p>
+            {% endif %}
             <ul class="dashboard-chart-legend">
                 {% for segment in maintenance_chart %}
                     <li>
