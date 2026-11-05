@@ -10,6 +10,7 @@ urlpatterns = [
     path("staff-access/maintenance-collection/", views.maintenance_collection, name="maintenance_collection"),
     path("community-access/login/", views.community_access_login, name="community_access_login"),
     path("community-access/", views.community_access, name="community_access"),
+    path("community-access/accounts/", views.community_accounts, name="community_accounts"),
     path("community-access/staff/", views.community_staff, name="community_staff"),
     path("community-access/flats/<int:unit_id>/", views.community_unit_detail, name="community_unit_detail"),
     path("feedback/", views.feedback_list, name="feedback_list"),

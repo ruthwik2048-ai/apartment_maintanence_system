@@ -21,6 +21,8 @@ This is a standalone Django implementation of the apartment complaint-management
 - Resident reopening and feedback after resolution
 - Role-aware dashboard and Django admin
 - President-only flat detail pages with complaint counts and issue descriptions
+- President dashboard with complaint counts, monthly maintenance payment status by flat, and protected resident contact details
+- President account management for resident and maintenance-staff profiles, activation, and password resets
 - Public community information page with apartment facilities and resident login hidden on that page
 - Optional complaint/work-log file attachments
 

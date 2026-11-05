@@ -26,6 +26,12 @@
     <p>FLAT COMPLAINTS</p>
     <h1>Flat {{ unit.unit_number }}</h1>
     <span>{{ unit.owner_name }} · {{ unit.apartment.name }}</span>
+    {% if unit.resident %}
+        <span>{{ unit.resident.get_full_name|default:unit.resident.username }} · {{ unit.resident.email }}{% if unit.resident.phone %} · {{ unit.resident.phone }}{% endif %}</span>
+        <span>Resident login: {{ unit.resident.username }} · {% if unit.resident.is_active %}Active{% else %}Deactivated{% endif %}</span>
+    {% else %}
+        <span>No resident login is linked to this flat.</span>
+    {% endif %}
 </section>
 
 <section class="flat-complaints-count" aria-label="Complaint count">

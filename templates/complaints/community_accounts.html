@@ -1,0 +1,127 @@
+{% extends "complaints/base.html" %}
+{% block title %}Manage Accounts | Vijetha Nivas{% endblock %}
+{% block extra_styles %}
+<style>
+    .accounts-page { padding-bottom: 2rem; }
+    .accounts-hero { padding: clamp(1.5rem, 5vw, 2.5rem); border-radius: 1.2rem; color: #fff; background: linear-gradient(120deg, #4338ca, #7c3aed 55%, #db2777); box-shadow: 0 1rem 2.5rem #6d28d92b; }
+    .accounts-hero p { margin: 0 0 .4rem; color: #fce7f3; font-weight: 700; }
+    .accounts-hero h1 { margin: 0; font-size: clamp(1.8rem, 4vw, 2.6rem); }
+    .accounts-hero span { display: block; margin-top: .5rem; color: #f5f3ff; }
+    .accounts-note { padding: .9rem 1rem; border: 1px solid #c7d2fe; border-radius: .75rem; background: #eef2ff; color: #3730a3; }
+    .account-section { margin: 1.5rem 0; }
+    .account-card { margin: .8rem 0; padding: 1rem 1.2rem; border: 1px solid #e4e7f2; border-radius: .85rem; background: #fff; box-shadow: 0 .45rem 1.3rem #312e8110; }
+    .account-card summary { color: #312e81; font-weight: 800; cursor: pointer; }
+    .account-card[open] summary { margin-bottom: 1rem; }
+    .account-meta { color: #536575; }
+    .account-meta strong { color: #273449; }
+    .account-forms { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .account-form { padding: .9rem; border: 1px solid #e5e7eb; border-radius: .7rem; background: #f9fafb; }
+    .account-form h3 { margin-top: 0; color: #3730a3; }
+    .account-form p { margin: .6rem 0; }
+    .account-form input, .account-form select { box-sizing: border-box; width: 100%; margin-top: .2rem; padding: .55rem; }
+    .account-form button { margin-top: .5rem; }
+    .account-action-danger { background: #b91c1c; }
+</style>
+{% endblock %}
+{% block content %}
+<div class="accounts-page">
+    <section class="accounts-hero">
+        <p>PRESIDENT ACCESS</p>
+        <h1>Manage resident and staff accounts</h1>
+        <span>Update contact/login names, reset passwords, activate or deactivate accounts, and create resident accounts for vacant flats.</span>
+    </section>
+    <p class="accounts-note">Passwords are never shown. Resident accounts use the owner name to sign in; a resident account created for a flat starts with that flat number as its password. Use a new password of at least 8 characters when resetting an account.</p>
+    <p><a class="button" href="{% url 'community_staff' %}">Create a staff account</a></p>
+
+    <section class="account-section">
+        <h2>Resident accounts and flat owners</h2>
+        {% for entry in resident_accounts %}
+            <details class="account-card">
+                <summary>Flat {{ entry.unit.unit_number }} · {{ entry.unit.owner_name }} · {% if entry.unit.resident %}{% if entry.unit.resident.is_active %}Active{% else %}Deactivated{% endif %}{% else %}No login linked{% endif %}</summary>
+                {% if entry.unit.resident %}
+                    <p class="account-meta"><strong>Sign-in name:</strong> {{ entry.unit.owner_name }} · <strong>Email:</strong> {{ entry.unit.resident.email }}{% if entry.unit.resident.phone %} · <strong>Phone:</strong> {{ entry.unit.resident.phone }}{% endif %}</p>
+                    <div class="account-forms">
+                        <form class="account-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="update_account">
+                            <input type="hidden" name="user_id" value="{{ entry.unit.resident.pk }}">
+                            <h3>Edit resident and owner details</h3>
+                            {{ entry.edit_form.as_p }}
+                            <button type="submit">Save changes</button>
+                        </form>
+                        <form class="account-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="reset_password">
+                            <input type="hidden" name="user_id" value="{{ entry.unit.resident.pk }}">
+                            <h3>Reset resident password</h3>
+                            {{ entry.password_form.as_p }}
+                            <button type="submit">Reset password</button>
+                        </form>
+                        <form class="account-form" method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="toggle_active">
+                            <input type="hidden" name="user_id" value="{{ entry.unit.resident.pk }}">
+                            <h3>Account access</h3>
+                            <p>{% if entry.unit.resident.is_active %}This resident can currently sign in.{% else %}This resident cannot currently sign in.{% endif %}</p>
+                            <button class="{% if entry.unit.resident.is_active %}account-action-danger{% endif %}" type="submit">{% if entry.unit.resident.is_active %}Deactivate account{% else %}Activate account{% endif %}</button>
+                        </form>
+                    </div>
+                {% else %}
+                    <p class="account-meta">No resident login is linked to this flat yet.</p>
+                    <form class="account-form" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="create_resident">
+                        <input type="hidden" name="unit_id" value="{{ entry.unit.pk }}">
+                        <h3>Create resident login</h3>
+                        {{ entry.create_form.as_p }}
+                        <button type="submit">Create resident account</button>
+                    </form>
+                {% endif %}
+                <p><a href="{% url 'community_unit_detail' entry.unit.pk %}">View flat owner details and complaints</a></p>
+            </details>
+        {% empty %}
+            <p class="account-card">No active flats are available.</p>
+        {% endfor %}
+    </section>
+
+    <section class="account-section">
+        <h2>Maintenance staff accounts</h2>
+        {% for staff_member in staff_accounts %}
+            <details class="account-card">
+                <summary>{{ staff_member.get_full_name|default:staff_member.username }} · {{ staff_member.get_staff_position_display|default:"Maintenance staff" }} · {% if staff_member.is_active %}Active{% else %}Deactivated{% endif %}</summary>
+                <p class="account-meta"><strong>Username:</strong> {{ staff_member.username }} · <strong>Email:</strong> {{ staff_member.email }}{% if staff_member.phone %} · <strong>Phone:</strong> {{ staff_member.phone }}{% endif %}</p>
+                <div class="account-forms">
+                    <form class="account-form" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="update_account">
+                        <input type="hidden" name="user_id" value="{{ staff_member.pk }}">
+                        <h3>Edit staff details</h3>
+                        {{ staff_member.edit_form.as_p }}
+                        <button type="submit">Save changes</button>
+                    </form>
+                    <form class="account-form" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="reset_password">
+                        <input type="hidden" name="user_id" value="{{ staff_member.pk }}">
+                        <h3>Reset staff password</h3>
+                        {{ staff_member.password_form.as_p }}
+                        <button type="submit">Reset password</button>
+                    </form>
+                    <form class="account-form" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="toggle_active">
+                        <input type="hidden" name="user_id" value="{{ staff_member.pk }}">
+                        <h3>Account access</h3>
+                        <p>{% if staff_member.is_active %}This staff member can currently sign in.{% else %}This staff member cannot currently sign in.{% endif %}</p>
+                        <button class="{% if staff_member.is_active %}account-action-danger{% endif %}" type="submit">{% if staff_member.is_active %}Deactivate account{% else %}Activate account{% endif %}</button>
+                    </form>
+                </div>
+            </details>
+        {% empty %}
+            <p class="account-card">No staff accounts have been created.</p>
+        {% endfor %}
+    </section>
+
+    <p><a href="{% url 'community_access' %}">Back to President Access</a></p>
+</div>
+{% endblock %}

@@ -5,6 +5,7 @@ from django.contrib import messages
 from django.contrib.auth import get_user_model, login
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied
+from django.db import transaction
 from django.db.models import Avg, Count, Q, Sum
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -13,11 +14,14 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from .forms import (
+    AccountPasswordResetForm,
     AssignmentForm,
     CaseInsensitiveAuthenticationForm,
     ComplaintForm,
+    CommunityAccountUpdateForm,
     FeedbackForm,
     MaintenanceStaffCreationForm,
+    ResidentAccountCreationForm,
     WorkUpdateForm,
 )
 from .models import (
@@ -478,6 +482,48 @@ def community_access(request):
             "username",
         )
     )
+    current_period = timezone.localdate().replace(day=1)
+    units = list(
+        Unit.objects.filter(apartment__is_active=True)
+        .select_related("apartment", "resident")
+        .annotate(
+            complaint_count=Count("complaints"),
+            open_complaint_count=Count(
+                "complaints",
+                filter=Q(
+                    complaints__status__in=(
+                        Complaint.Status.RAISED,
+                        Complaint.Status.ASSIGNED,
+                        Complaint.Status.PENDING,
+                        Complaint.Status.IN_PROGRESS,
+                        Complaint.Status.REOPENED,
+                    )
+                ),
+            ),
+        )
+        .order_by("apartment__name", "unit_number")
+    )
+    payments_by_unit = {
+        payment.unit_id: payment
+        for payment in MaintenancePayment.objects.filter(
+            unit__in=units,
+            period=current_period,
+        )
+    }
+    maintenance_rows = []
+    for unit in units:
+        payment = payments_by_unit.get(unit.pk)
+        is_paid = bool(payment and payment.status == MaintenancePayment.Status.PAID)
+        maintenance_rows.append(
+            {
+                "unit": unit,
+                "payment": payment,
+                "is_paid": is_paid,
+                "amount": payment.amount if payment else MONTHLY_MAINTENANCE_FEE,
+            }
+        )
+    paid_rows = [row for row in maintenance_rows if row["is_paid"]]
+    unpaid_rows = [row for row in maintenance_rows if not row["is_paid"]]
     return render(
         request,
         "complaints/community_access.html",
@@ -489,26 +535,177 @@ def community_access(request):
                 (staff_member.salary for staff_member in staff_members),
                 Decimal("0.00"),
             ),
-            "units": (
-                Unit.objects.filter(apartment__is_active=True)
-                .select_related("apartment")
-                .annotate(
-                    complaint_count=Count("complaints"),
-                    open_complaint_count=Count(
-                        "complaints",
-                        filter=Q(
-                            complaints__status__in=(
-                                Complaint.Status.RAISED,
-                                Complaint.Status.ASSIGNED,
-                                Complaint.Status.PENDING,
-                                Complaint.Status.IN_PROGRESS,
-                                Complaint.Status.REOPENED,
-                            )
-                        ),
+            "units": units,
+            "current_period": current_period,
+            "maintenance_rows": maintenance_rows,
+            "maintenance_paid_count": len(paid_rows),
+            "maintenance_due_count": len(unpaid_rows),
+            "maintenance_received_total": sum(
+                (row["amount"] for row in paid_rows),
+                Decimal("0.00"),
+            ),
+            "maintenance_due_total": sum(
+                (row["amount"] for row in unpaid_rows),
+                Decimal("0.00"),
+            ),
+        },
+    )
+
+
+@login_required(login_url="community_access_login")
+def community_accounts(request):
+    if request.user.role != User.Role.ADMIN and not request.user.is_superuser:
+        raise PermissionDenied("Only apartment administrators can manage accounts.")
+
+    if request.method == "POST":
+        action = request.POST.get("action")
+        if action == "create_resident":
+            unit = get_object_or_404(
+                Unit.objects.select_related("apartment"),
+                pk=request.POST.get("unit_id"),
+                apartment__is_active=True,
+            )
+            if unit.resident_id:
+                messages.error(request, f"Flat {unit.unit_number} already has a resident account.")
+                return redirect("community_accounts")
+            form = ResidentAccountCreationForm(request.POST)
+            if form.is_valid():
+                username = f"resident-{unit.pk}"
+                if User.objects.filter(username__iexact=username).exists():
+                    messages.error(
+                        request,
+                        f"Cannot create the account for flat {unit.unit_number}: "
+                        f"username {username!r} is already in use.",
+                    )
+                    return redirect("community_accounts")
+                with transaction.atomic():
+                    resident = User(
+                        username=username,
+                        first_name=form.cleaned_data["first_name"].strip(),
+                        last_name=form.cleaned_data["last_name"].strip(),
+                        email=form.cleaned_data["email"],
+                        phone=form.cleaned_data["phone"].strip(),
+                        role=User.Role.RESIDENT,
+                    )
+                    resident.set_password(unit.unit_number)
+                    resident.save()
+                    unit.resident = resident
+                    unit.save(update_fields=("resident",))
+                messages.success(
+                    request,
+                    f"Resident account for flat {unit.unit_number} created. "
+                    "The initial password is the flat number.",
+                )
+            else:
+                messages.error(
+                    request,
+                    "; ".join(
+                        f"{field}: {error}"
+                        for field, errors in form.errors.items()
+                        for error in errors
                     ),
                 )
-                .order_by("apartment__name", "unit_number")
-            ),
+            return redirect("community_accounts")
+
+        if action in {"update_account", "reset_password", "toggle_active"}:
+            account = get_object_or_404(
+                User,
+                pk=request.POST.get("user_id"),
+                role__in=(User.Role.RESIDENT, User.Role.STAFF),
+            )
+            unit = (
+                account.units.select_related("apartment")
+                .filter(apartment__is_active=True)
+                .order_by("unit_number")
+                .first()
+                if account.role == User.Role.RESIDENT
+                else None
+            )
+
+            if action == "update_account":
+                form = CommunityAccountUpdateForm(
+                    request.POST,
+                    user=account,
+                    unit=unit,
+                )
+                if form.is_valid():
+                    with transaction.atomic():
+                        form.save()
+                    messages.success(request, f"Account for {account} updated.")
+                else:
+                    messages.error(
+                        request,
+                        "; ".join(
+                            f"{field}: {error}"
+                            for field, errors in form.errors.items()
+                            for error in errors
+                        ),
+                    )
+            elif action == "reset_password":
+                form = AccountPasswordResetForm(request.POST)
+                if form.is_valid():
+                    account.set_password(form.cleaned_data["password"])
+                    account.save(update_fields=("password",))
+                    messages.success(request, f"Password reset for {account}.")
+                else:
+                    messages.error(
+                        request,
+                        "; ".join(
+                            f"{field}: {error}"
+                            for field, errors in form.errors.items()
+                            for error in errors
+                        ),
+                    )
+            else:
+                account.is_active = not account.is_active
+                account.save(update_fields=("is_active",))
+                state = "activated" if account.is_active else "deactivated"
+                messages.success(request, f"Account for {account} {state}.")
+            return redirect("community_accounts")
+
+        messages.error(request, "Choose a valid account management action.")
+        return redirect("community_accounts")
+
+    units = list(
+        Unit.objects.filter(apartment__is_active=True)
+        .select_related("apartment", "resident")
+        .order_by("apartment__name", "unit_number")
+    )
+    resident_accounts = []
+    for unit in units:
+        resident_accounts.append(
+            {
+                "unit": unit,
+                "edit_form": (
+                    CommunityAccountUpdateForm(user=unit.resident, unit=unit)
+                    if unit.resident_id
+                    else None
+                ),
+                "password_form": (
+                    AccountPasswordResetForm() if unit.resident_id else None
+                ),
+                "create_form": (
+                    ResidentAccountCreationForm() if not unit.resident_id else None
+                ),
+            }
+        )
+    staff_accounts = list(
+        User.objects.filter(role=User.Role.STAFF).order_by(
+            "first_name",
+            "last_name",
+            "username",
+        )
+    )
+    for staff_member in staff_accounts:
+        staff_member.edit_form = CommunityAccountUpdateForm(user=staff_member)
+        staff_member.password_form = AccountPasswordResetForm()
+
+    return render(
+        request,
+        "complaints/community_accounts.html",
+        {
+            "resident_accounts": resident_accounts,
+            "staff_accounts": staff_accounts,
         },
     )
 
@@ -553,7 +750,7 @@ def community_unit_detail(request, unit_id):
         raise PermissionDenied("Only apartment administrators can view flat complaints.")
 
     unit = get_object_or_404(
-        Unit.objects.select_related("apartment"),
+        Unit.objects.select_related("apartment", "resident"),
         pk=unit_id,
         apartment__is_active=True,
     )

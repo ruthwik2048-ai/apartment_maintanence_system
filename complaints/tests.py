@@ -1178,9 +1178,16 @@ class ComplaintWorkflowTests(TestCase):
 
     def test_community_access_is_available_to_admin_role_without_django_staff(self):
         complaint = self.create_complaint()
-        self.create_complaint(
+        resolved_complaint = self.create_complaint(
             title="Completed kitchen tap",
             status=Complaint.Status.COMPLETED,
+        )
+        current_period = timezone.localdate().replace(day=1)
+        MaintenancePayment.objects.create(
+            unit=self.unit,
+            period=current_period,
+            amount="1500.00",
+            status=MaintenancePayment.Status.PAID,
         )
         self.assertFalse(self.admin.is_staff)
         self.client.force_login(self.admin)
@@ -1200,7 +1207,19 @@ class ComplaintWorkflowTests(TestCase):
         self.assertEqual(first_unit.complaint_count, 2)
         self.assertEqual(first_unit.open_complaint_count, 1)
         self.assertContains(response, "1 open · 2 total complaints")
+        self.assertEqual(response.context["summary"]["total"], 2)
+        self.assertEqual(response.context["summary"]["pending"], 1)
+        self.assertEqual(response.context["summary"]["resolved"], 1)
+        self.assertEqual(response.context["maintenance_paid_count"], 1)
+        self.assertEqual(response.context["maintenance_due_count"], 1)
+        self.assertEqual(response.context["maintenance_received_total"], Decimal("1500.00"))
+        self.assertEqual(response.context["maintenance_due_total"], Decimal("1500.00"))
+        self.assertContains(response, "Maintenance collection")
+        self.assertContains(response, "Paid")
+        self.assertContains(response, "Due")
+        self.assertContains(response, self.resident.email)
         self.assertContains(response, f'href="{reverse("community_staff")}"')
+        self.assertContains(response, f'href="{reverse("community_accounts")}"')
         self.assertContains(
             response,
             f'<a class="community-directory-item" href="'
@@ -1226,6 +1245,8 @@ class ComplaintWorkflowTests(TestCase):
             resident=self.other_resident,
             title="Other flat issue",
         )
+        self.resident.phone = "555-0101"
+        self.resident.save(update_fields=("phone",))
         self.client.force_login(self.admin)
 
         response = self.client.get(
@@ -1247,6 +1268,8 @@ class ComplaintWorkflowTests(TestCase):
         self.assertContains(response, first_complaint.category.name)
         self.assertContains(response, first_complaint.description)
         self.assertNotContains(response, "Other flat issue")
+        self.assertContains(response, self.resident.email)
+        self.assertContains(response, self.resident.phone)
 
     def test_admin_flat_detail_shows_zero_when_no_complaints_exist(self):
         self.client.force_login(self.admin)
@@ -1317,6 +1340,129 @@ class ComplaintWorkflowTests(TestCase):
         self.client.force_login(self.resident)
         response = self.client.get(reverse("community_staff"))
         self.assertEqual(response.status_code, 403)
+
+    def test_account_management_is_for_president_only(self):
+        response = self.client.get(reverse("community_accounts"))
+        self.assertRedirects(
+            response,
+            f"{reverse('community_access_login')}?next={reverse('community_accounts')}",
+        )
+
+        self.client.force_login(self.resident)
+        response = self.client.get(reverse("community_accounts"))
+        self.assertEqual(response.status_code, 403)
+
+    def test_president_can_edit_reset_and_deactivate_resident_and_staff_accounts(self):
+        self.client.force_login(self.admin)
+        resident_update = self.client.post(
+            reverse("community_accounts"),
+            {
+                "action": "update_account",
+                "user_id": self.resident.pk,
+                "first_name": "Updated",
+                "last_name": "Resident",
+                "email": "updated-resident@example.com",
+                "phone": "555-0101",
+                "owner_name": "Updated Owner",
+            },
+        )
+        self.assertRedirects(resident_update, reverse("community_accounts"))
+        self.resident.refresh_from_db()
+        self.unit.refresh_from_db()
+        self.assertEqual(self.resident.first_name, "Updated")
+        self.assertEqual(self.unit.owner_name, "Updated Owner")
+
+        reset_response = self.client.post(
+            reverse("community_accounts"),
+            {
+                "action": "reset_password",
+                "user_id": self.resident.pk,
+                "password": "Resident-Reset-908",
+                "confirm_password": "Resident-Reset-908",
+            },
+        )
+        self.assertRedirects(reset_response, reverse("community_accounts"))
+        self.resident.refresh_from_db()
+        self.assertTrue(self.resident.check_password("Resident-Reset-908"))
+
+        self.client.post(
+            reverse("community_accounts"),
+            {"action": "toggle_active", "user_id": self.resident.pk},
+        )
+        self.resident.refresh_from_db()
+        self.assertFalse(self.resident.is_active)
+        self.client.post(
+            reverse("community_accounts"),
+            {"action": "toggle_active", "user_id": self.resident.pk},
+        )
+        self.resident.refresh_from_db()
+        self.assertTrue(self.resident.is_active)
+
+        staff_update = self.client.post(
+            reverse("community_accounts"),
+            {
+                "action": "update_account",
+                "user_id": self.staff.pk,
+                "username": "updated-staff",
+                "first_name": "Updated Staff",
+                "last_name": "",
+                "email": "updated-staff@example.com",
+                "phone": "555-0202",
+                "staff_position": User.StaffPosition.ELECTRICIAN,
+            },
+        )
+        self.assertRedirects(staff_update, reverse("community_accounts"))
+        self.staff.refresh_from_db()
+        self.assertEqual(self.staff.username, "updated-staff")
+        self.assertEqual(self.staff.first_name, "Updated Staff")
+        self.assertEqual(self.staff.staff_position, User.StaffPosition.ELECTRICIAN)
+        self.assertEqual(self.staff.salary, Decimal("7500.00"))
+
+        self.client.post(
+            reverse("community_accounts"),
+            {
+                "action": "reset_password",
+                "user_id": self.staff.pk,
+                "password": "Staff-Reset-908",
+                "confirm_password": "Staff-Reset-908",
+            },
+        )
+        self.staff.refresh_from_db()
+        self.assertTrue(self.staff.check_password("Staff-Reset-908"))
+        self.client.post(
+            reverse("community_accounts"),
+            {"action": "toggle_active", "user_id": self.staff.pk},
+        )
+        self.staff.refresh_from_db()
+        self.assertFalse(self.staff.is_active)
+        self.assertContains(self.client.get(reverse("community_accounts")), "Updated Staff")
+
+    def test_president_can_create_resident_login_for_unlinked_flat(self):
+        vacant_unit = Unit.objects.create(
+            apartment=self.apartment,
+            unit_number="A-103",
+            owner_name="New Owner",
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.post(
+            reverse("community_accounts"),
+            {
+                "action": "create_resident",
+                "unit_id": vacant_unit.pk,
+                "first_name": "New",
+                "last_name": "Resident",
+                "email": "new-resident@example.com",
+                "phone": "555-0303",
+            },
+        )
+
+        self.assertRedirects(response, reverse("community_accounts"))
+        vacant_unit.refresh_from_db()
+        resident = vacant_unit.resident
+        self.assertEqual(resident.role, User.Role.RESIDENT)
+        self.assertEqual(resident.first_name, "New")
+        self.assertTrue(resident.check_password("A-103"))
 
     def test_staff_creation_rejects_duplicate_email(self):
         self.client.force_login(self.admin)
