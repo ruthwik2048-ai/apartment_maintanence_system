@@ -37,6 +37,21 @@ class Command(BaseCommand):
                 "No flats were found for Vijetha Nivas; no accounts were changed."
             )
 
+        president_unit = next(
+            (
+                unit
+                for unit in units
+                if unit.unit_number == "107"
+                and unit.owner_name.casefold() == "ruthwik"
+            ),
+            None,
+        )
+        if president_unit is None:
+            raise CommandError(
+                "Flat 107 for Ruthwik was not found in this database. Confirm the "
+                "production flat and owner records before changing accounts."
+            )
+
         if not options["apply"]:
             self.stdout.write(
                 f"Found {len(units)} flats. No accounts changed. "
@@ -48,10 +63,11 @@ class Command(BaseCommand):
         staff_password = self._read_confirmed_password("Staff")
 
         with transaction.atomic():
+            self._make_president_username_available(president_unit)
             president = self._get_or_create_user(
                 username="ruthwik",
                 role=User.Role.ADMIN,
-                first_name="Ruthwik",
+                first_name=president_unit.owner_name,
                 email="president@vijethanivas.invalid",
             )
             self._validate_active_role(president, User.Role.ADMIN, "President")
@@ -110,9 +126,42 @@ class Command(BaseCommand):
             self.style.SUCCESS(
                 f"Login repair complete: {len(units)} residents "
                 f"({created_residents} created), {len(STAFF_NAMES)} staff, "
-                "and the president account are ready."
+                "and the separate president account are ready."
             )
         )
+
+    @staticmethod
+    def _make_president_username_available(president_unit):
+        matching_users = list(User.objects.filter(username__iexact="ruthwik")[:2])
+        if len(matching_users) > 1:
+            raise CommandError(
+                "Multiple accounts match the president username 'ruthwik'; "
+                "no accounts were changed."
+            )
+        if not matching_users or matching_users[0].role != User.Role.RESIDENT:
+            return
+
+        resident = matching_users[0]
+        if president_unit.resident_id != resident.pk:
+            raise CommandError(
+                "The username 'ruthwik' belongs to a resident account that is "
+                "not linked to Ruthwik in flat 107; no accounts were changed."
+            )
+
+        resident_username = f"resident-{president_unit.pk}"
+        if (
+            User.objects.filter(username__iexact=resident_username)
+            .exclude(pk=resident.pk)
+            .exists()
+        ):
+            raise CommandError(
+                f"Cannot reserve the president username 'ruthwik': "
+                f"replacement resident username {resident_username!r} is "
+                "already in use; no accounts were changed."
+            )
+
+        resident.username = resident_username
+        resident.save(update_fields=("username",))
 
     @staticmethod
     def _read_confirmed_password(label):

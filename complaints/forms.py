@@ -163,7 +163,12 @@ class CaseInsensitiveAuthenticationForm(AuthenticationForm):
 class ResidentAuthenticationForm(AuthenticationForm):
     username = forms.CharField(
         label="Owner name",
-        help_text="Enter the owner name registered to your flat.",
+        help_text="Enter the owner name registered to your flat. Names are case-insensitive.",
+    )
+    password = forms.CharField(
+        label="Flat number",
+        strip=False,
+        widget=forms.PasswordInput,
     )
 
     def clean(self):

@@ -53,17 +53,23 @@ The command can also be run manually from the 2nd of the month:
 .\.venv\Scripts\python.exe manage.py generate_monthly_maintenance_dues
 ```
 
-For deployment, set `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, and `DJANGO_ALLOWED_HOSTS` in the environment. The default SQLite database and secret are intended for local development.
+For deployment, set `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` in the environment. Use a persistent production database: `db.sqlite3` is ignored by Git, and the default SQLite database is intended only for local development. Migrations create the database schema but do not copy local apartments, flats, or accounts to the deployed database.
 
 ### Repairing initial logins on Render
 
-The local `db.sqlite3` is not deployed with the source code, so local accounts and passwords are not automatically copied to Render. After confirming the Render service is connected to the expected database and the latest code is deployed, open its Shell and run:
+The local `db.sqlite3` is not deployed with the source code, so local apartments, flats, accounts, and passwords are not automatically copied to Render. On a new deployment, first connect the web service to its persistent database and deploy the latest code. If this is a fresh database, create an administrator with `python manage.py createsuperuser`, sign in at `/admin/`, and create the apartment named `Vijetha Nivas` at `Ramnagar`, `Karimanagar` and its flats with their owner names and flat numbers. The login repair command requires those apartment and flat records to already exist.
+
+Then open the Render Shell for that same web service and run:
 
 ```sh
 python manage.py repair_initial_logins --apply
 ```
 
-The command asks for the president and staff passwords interactively, resets each linked resident account's password to its flat number, and creates any missing resident or staff accounts. It preserves existing staff positions and refuses to change accounts with unexpected roles or inactive status. Run it only when you intend to reset these initial login credentials.
+The command asks for the president and staff passwords interactively, resets each linked resident account's password to its flat number, and creates any missing resident or staff accounts. The president is a separate administrator account (`ruthwik`), so the flat 107 resident can continue to sign in with owner name `Ruthwik` and password `107`. If that resident already uses `ruthwik` as their internal account username, the command changes that internal username to `resident-<flat-record-id>`; resident login remains the owner name and flat number. It preserves existing staff positions and refuses to change accounts with unexpected roles or inactive status. Run it only when you intend to reset these initial login credentials.
+
+After it completes, residents sign in on the resident login page with the owner name recorded for their flat (case-insensitive) and the flat number as the password (case-sensitive). The president signs in through **Vijetha Community Access** with username `ruthwik` and the president password entered above. Staff use their assigned username and the staff password entered above. If the command reports that the apartment or flats are missing, create those records in `/admin/` first; do not run the repair command against an unintended database.
+
+When adding flats after initial setup, add the new flat and owner records to the production database, then run `python manage.py repair_initial_logins --apply` again from the Render Shell. This creates accounts for newly added flats and resets every linked resident password to that flat's number; it also resets the president and staff passwords to the values entered at the prompts. The configured staff usernames are `sandeep`, `ganesh`, `suresh`, `deeraj`, and `ramesh`.
 
 ## Tests
 

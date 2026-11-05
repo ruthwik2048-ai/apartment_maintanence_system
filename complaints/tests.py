@@ -1078,6 +1078,18 @@ class ComplaintWorkflowTests(TestCase):
             unit_number="102",
             owner_name="Unlinked Resident",
         )
+        president_resident = User.objects.create_user(
+            username="ruthwik",
+            email="ruthwik@example.com",
+            role=User.Role.RESIDENT,
+            password="old-resident-password",
+        )
+        president_unit = Unit.objects.create(
+            apartment=apartment,
+            unit_number="107",
+            owner_name="Ruthwik",
+            resident=president_resident,
+        )
         existing_admin_password = self.admin.password
         output = StringIO()
 
@@ -1095,6 +1107,9 @@ class ComplaintWorkflowTests(TestCase):
         president = User.objects.get(username__iexact="ruthwik")
         self.assertEqual(president.role, User.Role.ADMIN)
         self.assertTrue(president.check_password("180605"))
+        president_resident.refresh_from_db()
+        self.assertEqual(president_resident.username, f"resident-{president_unit.pk}")
+        self.assertTrue(president_resident.check_password("107"))
         unlinked_unit.refresh_from_db()
         self.assertIsNotNone(unlinked_unit.resident_id)
         self.assertTrue(unlinked_unit.resident.check_password(unlinked_unit.unit_number))
@@ -1103,16 +1118,37 @@ class ComplaintWorkflowTests(TestCase):
             self.assertEqual(staff_member.role, User.Role.STAFF)
             self.assertTrue(staff_member.check_password("Vijetha"))
 
+        resident_response = self.client.post(
+            reverse("login"),
+            {"username": "ruthwik", "password": "107"},
+        )
+        self.assertRedirects(resident_response, reverse("dashboard"))
+        self.assertEqual(
+            int(self.client.session["_auth_user_id"]),
+            president_resident.pk,
+        )
+
+        self.client.logout()
+        president_response = self.client.post(
+            reverse("community_access_login"),
+            {"username": "ruthwik", "password": "180605"},
+        )
+        self.assertRedirects(president_response, reverse("community_access"))
+        self.assertEqual(
+            int(self.client.session["_auth_user_id"]),
+            president.pk,
+        )
+
     def test_resident_can_log_in_with_owner_name_and_flat_number_password(self):
-        self.unit.owner_name = "RAVI"
-        self.unit.unit_number = "101"
+        self.unit.owner_name = "Ruthwik"
+        self.unit.unit_number = "107"
         self.unit.save(update_fields=("owner_name", "unit_number"))
-        self.resident.set_password("101")
+        self.resident.set_password("107")
         self.resident.save(update_fields=("password",))
 
         response = self.client.post(
             reverse("login"),
-            {"username": "ravi", "password": "101"},
+            {"username": "ruthwik", "password": "107"},
         )
 
         self.assertRedirects(response, reverse("dashboard"))
@@ -1120,6 +1156,13 @@ class ComplaintWorkflowTests(TestCase):
             int(self.client.session["_auth_user_id"]),
             self.resident.pk,
         )
+
+    def test_resident_login_labels_explain_owner_name_and_flat_number(self):
+        response = self.client.get(reverse("login"))
+
+        self.assertContains(response, "Owner name")
+        self.assertContains(response, "Names are case-insensitive.")
+        self.assertContains(response, "Flat number")
 
     def test_duplicate_owner_names_are_resolved_by_flat_number_password(self):
         self.unit.owner_name = "RAVI"
