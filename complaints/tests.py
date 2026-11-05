@@ -1095,13 +1095,25 @@ class ComplaintWorkflowTests(TestCase):
 
         call_command("repair_initial_logins", stdout=output)
         self.assertIn("No accounts changed", output.getvalue())
+        self.assertIn("Flat 107: Ruthwik", output.getvalue())
+        self.assertIn("Flat 102: Unlinked Resident", output.getvalue())
         self.assertFalse(mock_getpass.called)
 
-        mock_getpass.side_effect = ("180605", "180605", "Vijetha", "Vijetha")
+        mock_getpass.side_effect = (
+            "180605",
+            "180605",
+            "Vijetha",
+            "Vijetha",
+            "180605",
+            "180605",
+            "Vijetha",
+            "Vijetha",
+        )
         call_command("repair_initial_logins", "--apply", stdout=StringIO())
 
         self.resident.refresh_from_db()
         self.assertTrue(self.resident.check_password(unit.unit_number))
+        self.assertEqual(self.resident.first_name, unit.owner_name)
         self.admin.refresh_from_db()
         self.assertEqual(self.admin.password, existing_admin_password)
         president = User.objects.get(username__iexact="ruthwik")
@@ -1139,6 +1151,48 @@ class ComplaintWorkflowTests(TestCase):
             president.pk,
         )
 
+        self.client.logout()
+        new_resident_response = self.client.post(
+            reverse("login"),
+            {"username": "Unlinked Resident", "password": "102"},
+        )
+        self.assertRedirects(new_resident_response, reverse("dashboard"))
+        self.assertEqual(
+            int(self.client.session["_auth_user_id"]),
+            unlinked_unit.resident_id,
+        )
+
+        self.client.logout()
+        staff_response = self.client.post(
+            reverse("staff_login"),
+            {"username": "SANDEEP", "password": "Vijetha"},
+        )
+        self.assertRedirects(staff_response, reverse("staff_portal"))
+        self.assertEqual(
+            int(self.client.session["_auth_user_id"]),
+            User.objects.get(username="sandeep").pk,
+        )
+
+        self.client.logout()
+        call_command("repair_initial_logins", "--apply", stdout=StringIO())
+        self.assertEqual(User.objects.filter(username__iexact="ruthwik").count(), 1)
+        self.assertEqual(
+            User.objects.filter(role=User.Role.STAFF, username__in=(
+                "sandeep",
+                "ganesh",
+                "suresh",
+                "deeraj",
+                "ramesh",
+            )).count(),
+            5,
+        )
+
+        repeat_president_response = self.client.post(
+            reverse("community_access_login"),
+            {"username": "ruthwik", "password": "180605"},
+        )
+        self.assertRedirects(repeat_president_response, reverse("community_access"))
+
     def test_resident_can_log_in_with_owner_name_and_flat_number_password(self):
         self.unit.owner_name = "Ruthwik"
         self.unit.unit_number = "107"
@@ -1152,6 +1206,30 @@ class ComplaintWorkflowTests(TestCase):
         )
 
         self.assertRedirects(response, reverse("dashboard"))
+        self.assertEqual(
+            int(self.client.session["_auth_user_id"]),
+            self.resident.pk,
+        )
+
+    def test_resident_login_uses_current_owner_name_and_ignores_extra_spaces(self):
+        self.unit.owner_name = "  Ruthwik  "
+        self.unit.unit_number = "107"
+        self.unit.save(update_fields=("owner_name", "unit_number"))
+        self.resident.set_password("107")
+        self.resident.save(update_fields=("password",))
+
+        old_owner_response = self.client.post(
+            reverse("login"),
+            {"username": "Previous Owner", "password": "107"},
+        )
+        self.assertEqual(old_owner_response.status_code, 200)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+        current_owner_response = self.client.post(
+            reverse("login"),
+            {"username": "ruthwik", "password": "107"},
+        )
+        self.assertRedirects(current_owner_response, reverse("dashboard"))
         self.assertEqual(
             int(self.client.session["_auth_user_id"]),
             self.resident.pk,

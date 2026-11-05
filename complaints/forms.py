@@ -181,7 +181,10 @@ class ResidentAuthenticationForm(AuthenticationForm):
             role=User.Role.RESIDENT,
             is_active=True,
             units__apartment__is_active=True,
-            units__owner_name__iexact=owner_name,
+        ).annotate(
+            normalized_owner_name=Lower(Trim("units__owner_name")),
+        ).filter(
+            normalized_owner_name=owner_name.lower(),
         ).distinct().order_by("pk")
         for candidate in candidates:
             user = authenticate(

@@ -55,8 +55,17 @@ class Command(BaseCommand):
         if not options["apply"]:
             self.stdout.write(
                 f"Found {len(units)} flats. No accounts changed. "
-                "Pass --apply to repair the logins."
+                "Current resident login records:"
             )
+            for unit in units:
+                account_status = (
+                    "account linked" if unit.resident_id else "account will be created"
+                )
+                self.stdout.write(
+                    f"  Flat {unit.unit_number}: {unit.owner_name} "
+                    f"({account_status})"
+                )
+            self.stdout.write("Pass --apply to repair the logins.")
             return
 
         president_password = self._read_confirmed_password("President")
@@ -104,8 +113,9 @@ class Command(BaseCommand):
                     created_residents += 1
 
                 resident_ids.add(resident.pk)
+                resident.first_name = unit.owner_name
                 resident.set_password(unit.unit_number)
-                resident.save(update_fields=("password",))
+                resident.save(update_fields=("first_name", "password"))
 
             for name in STAFF_NAMES:
                 staff_member = self._get_or_create_user(
