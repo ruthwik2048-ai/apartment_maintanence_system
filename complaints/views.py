@@ -283,13 +283,12 @@ def staff_portal(request):
 @login_required
 def dashboard(request):
     resident_unit = None
-    resident_maintenance_payment = None
-    resident_maintenance_period = None
-    resident_maintenance_status = None
+
     if request.user.role == User.Role.RESIDENT:
         resident_unit = (
-            request.user.units.select_related("apartment")
-            .order_by("unit_number")
+            request.user.units
+            .select_related("apartment")
+            .order_by("id")
             .first()
         )
         resident_maintenance_period = timezone.localdate().replace(day=1)
@@ -436,8 +435,6 @@ def dashboard(request):
             ),
         },
     )
-
-
 @login_required(login_url="community_access_login")
 def community_access(request):
     if request.user.role != User.Role.ADMIN and not request.user.is_superuser:
