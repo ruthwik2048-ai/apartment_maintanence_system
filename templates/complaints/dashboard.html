@@ -77,7 +77,12 @@
     <section class="dashboard-hero">
         <div>
             <h1>Your dashboard</h1>
-            <p>Welcome, {{ display_name }}{% if resident_unit %} · Flat {{ resident_unit.unit_number }}{% endif %} · {{ user.get_role_display }}</p>
+            <p>   Welcome, {{ display_name }}
+    {% if resident_unit %}
+        · {{ resident_unit.apartment.name }}
+        — Flat {{ resident_unit.unit_number }}
+    {% endif %}
+    · {{ user.get_role_display }}</p>
         </div>
         {% if user.role == "resident" %}
             <div class="dashboard-actions">
