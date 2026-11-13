@@ -55,6 +55,8 @@ The command can also be run manually from the 2nd of the month:
 
 For deployment, set `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, `DJANGO_ALLOWED_HOSTS`, and `DATABASE_URL` in the environment. Use a persistent production database: `db.sqlite3` is ignored by Git, and the default SQLite database is intended only for local development. Migrations create the database schema but do not copy local apartments, flats, or accounts to the deployed database.
 
+To create a superuser non-interactively, set `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, and `DJANGO_SUPERUSER_PASSWORD` in the deployment environment or secret store, then run `python manage.py createsuperuser --noinput` against the intended database. Never commit the password or other secret values to the repository.
+
 ### Repairing initial logins on Render
 
 The local `db.sqlite3` is not deployed with the source code, so local apartments, flats, accounts, and passwords are not automatically copied to Render. On a new deployment, first connect the web service to its persistent database and deploy the latest code. If this is a fresh database, create an administrator with `python manage.py createsuperuser`, sign in at `/admin/`, and create the apartment named `Vijetha Nivas` at `Ramnagar`, `Karimanagar` and its flats with their owner names and flat numbers. The login repair command requires those apartment and flat records to already exist.
