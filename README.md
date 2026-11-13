@@ -53,6 +53,8 @@ The command can also be run manually from the 2nd of the month:
 
 For deployment, set `DJANGO_SECRET_KEY`, `DJANGO_DEBUG=False`, and `DJANGO_ALLOWED_HOSTS` in the environment. The default SQLite database and secret are intended for local development.
 
+To create a superuser non-interactively, set `DJANGO_SUPERUSER_USERNAME`, `DJANGO_SUPERUSER_EMAIL`, and `DJANGO_SUPERUSER_PASSWORD` in the deployment environment or secret store, then run `python manage.py createsuperuser --noinput` against the intended database. Never commit the password or other secret values to the repository.
+
 ## Tests
 
 ```powershell
