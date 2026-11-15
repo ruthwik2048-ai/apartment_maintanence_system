@@ -283,7 +283,7 @@ def staff_portal(request):
 @login_required
 def dashboard(request):
     resident_unit = None
-
+    resident_maintenance_payment = None
     if request.user.role == User.Role.RESIDENT:
         resident_unit = (
             request.user.units
